@@ -132,4 +132,28 @@ class ScannerViewModel: ObservableObject {
                 $0.file < $1.file
         }
     }
+    
+    func exportToJSON() {
+        guard !results.isEmpty else {
+            errorMessage = "No results to export"
+            return
+        }
+        
+        let savePanel = NSSavePanel()
+        savePanel.nameFieldStringValue = "strings.json"
+        savePanel.allowedContentTypes = [.json]
+        
+        if savePanel.runModal() == .OK {
+            guard let url = savePanel.url else { return }
+            
+            do {
+                let encoder = JSONEncoder()
+                encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+                let data = try encoder.encode(results)
+                try data.write(to: url)
+            } catch {
+                errorMessage = "Failed to export JSON: \(error.localizedDescription)"
+            }
+        }
+    }
 } 

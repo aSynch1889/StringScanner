@@ -86,28 +86,39 @@ struct ResultsView: View {
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
-                List(viewModel.results, id: \.self) { result in
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(result.content)
-                            .font(.body)
-                        
-                        HStack {
-                            Text(result.file)
-                                .font(.caption)
-                                .foregroundColor(.secondary)
+                VStack {
+                    HStack {
+                        Spacer()
+                        Button(action: viewModel.exportToJSON) {
+                            Label("Export JSON", systemImage: "square.and.arrow.down")
+                        }
+                        .buttonStyle(.bordered)
+                    }
+                    .padding()
+                    
+                    List(viewModel.results, id: \.self) { result in
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(result.content)
+                                .font(.body)
                             
-                            Text("Line \(result.line)")
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                            
-                            if result.isLocalized {
-                                Text("Localized")
+                            HStack {
+                                Text(result.file)
                                     .font(.caption)
-                                    .foregroundColor(.blue)
+                                    .foregroundColor(.secondary)
+                                
+                                Text("Line \(result.line)")
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                                
+                                if result.isLocalized {
+                                    Text("Localized")
+                                        .font(.caption)
+                                        .foregroundColor(.blue)
+                                }
                             }
                         }
+                        .padding(.vertical, 4)
                     }
-                    .padding(.vertical, 4)
                 }
             }
         }
