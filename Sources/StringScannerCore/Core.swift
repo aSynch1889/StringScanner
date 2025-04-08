@@ -84,6 +84,14 @@ public class ProjectScanner {
         outputResults()
     }
     
+    public func getScanResults() -> [StringLocation] {
+        return allStrings.sorted {
+            $0.file == $1.file ?
+                ($0.line == $1.line ? $0.column < $1.column : $0.line < $1.line) :
+                $0.file < $1.file
+        }
+    }
+    
     private func isValidFile(_ url: URL) -> Bool {
         let validExtensions = ["swift", "m", "h"]
         guard validExtensions.contains(url.pathExtension) else { return false }
@@ -127,11 +135,7 @@ public class ProjectScanner {
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
         
         do {
-            let jsonData = try encoder.encode(allStrings.sorted {
-                $0.file == $1.file ?
-                    ($0.line == $1.line ? $0.column < $1.column : $0.line < $1.line) :
-                    $0.file < $1.file
-            })
+            let jsonData = try encoder.encode(getScanResults())
             
             if let jsonString = String(data: jsonData, encoding: .utf8) {
                 print(jsonString)
