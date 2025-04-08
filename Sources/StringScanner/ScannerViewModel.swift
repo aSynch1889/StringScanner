@@ -156,4 +156,34 @@ class ScannerViewModel: ObservableObject {
             }
         }
     }
+    
+    func exportToCSV() {
+        guard !results.isEmpty else {
+            errorMessage = "No results to export"
+            return
+        }
+        
+        let savePanel = NSSavePanel()
+        savePanel.nameFieldStringValue = "strings.csv"
+        savePanel.allowedContentTypes = [.commaSeparatedText]
+        
+        if savePanel.runModal() == .OK {
+            guard let url = savePanel.url else { return }
+            
+            do {
+                var csvString = "String,File,Line,Column,Is Localized\n"
+                
+                for result in results {
+                    let escapedContent = result.content.replacingOccurrences(of: "\"", with: "\"\"")
+                    let escapedFile = result.file.replacingOccurrences(of: "\"", with: "\"\"")
+                    
+                    csvString += "\"\(escapedContent)\",\"\(escapedFile)\",\(result.line),\(result.column),\"\(result.isLocalized ? "Yes" : "No")\"\n"
+                }
+                
+                try csvString.write(to: url, atomically: true, encoding: .utf8)
+            } catch {
+                errorMessage = "Failed to export CSV: \(error.localizedDescription)"
+            }
+        }
+    }
 } 

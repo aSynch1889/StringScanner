@@ -93,6 +93,11 @@ struct ResultsView: View {
                             Label("Export JSON", systemImage: "square.and.arrow.down")
                         }
                         .buttonStyle(.bordered)
+                        
+                        Button(action: viewModel.exportToCSV) {
+                            Label("Export CSV", systemImage: "tablecells")
+                        }
+                        .buttonStyle(.bordered)
                     }
                     .padding()
                     
