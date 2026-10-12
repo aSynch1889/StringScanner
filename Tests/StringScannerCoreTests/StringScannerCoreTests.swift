@@ -88,6 +88,24 @@ final class StringScannerCoreTests: XCTestCase {
         XCTAssertTrue(results.contains { $0.content == "objc_localized" && $0.isLocalized })
     }
 
+    func testReportsParseIssuesForBrokenSwiftFiles() throws {
+        try copyFixture("broken.swift", into: tempRoot)
+        try copyFixture("simple.swift", into: tempRoot)
+
+        let scanner = ProjectScanner()
+        let report = scanner.scanProjectReport(
+            at: tempRoot.path,
+            configuration: ProjectScanConfiguration(
+                emitJSONToStandardOutput: false,
+                enableCatalogAudit: false
+            )
+        )
+
+        XCTAssertFalse(report.issues.isEmpty)
+        XCTAssertTrue(report.issues.contains { $0.kind == .parseError })
+        XCTAssertTrue(report.strings.contains { $0.content == "Hello" })
+    }
+
     func testScansInterfaceBuilderAndPreviewStrings() throws {
         try copyFixture("sample.xib", into: tempRoot)
         try copyFixture("preview_sample.swift", into: tempRoot)

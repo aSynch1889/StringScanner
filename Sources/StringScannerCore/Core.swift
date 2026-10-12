@@ -102,13 +102,37 @@ public enum StringOrigin: String, Codable, Sendable, Hashable {
     case preview
 }
 
+public struct ScanIssue: Codable, Sendable, Hashable {
+    public enum Kind: String, Codable, Sendable {
+        case parseError
+        case ioError
+        case unknown
+    }
+
+    public let file: String
+    public let message: String
+    public let kind: Kind
+
+    public init(file: String, message: String, kind: Kind) {
+        self.file = file
+        self.message = message
+        self.kind = kind
+    }
+}
+
 public struct ScanReport: Codable, Sendable {
     public let strings: [StringLocation]
     public let catalog: CatalogAudit
+    public let issues: [ScanIssue]
 
-    public init(strings: [StringLocation], catalog: CatalogAudit) {
+    public init(
+        strings: [StringLocation],
+        catalog: CatalogAudit,
+        issues: [ScanIssue] = []
+    ) {
         self.strings = strings
         self.catalog = catalog
+        self.issues = issues
     }
 }
 
@@ -117,12 +141,17 @@ public class ProjectScanner {
     private let resultsLock = NSLock()
     private let progressLock = NSLock()
     private var allStrings: [StringLocation] = []
+    private var allIssues: [ScanIssue] = []
     private var lastCatalogAudit: CatalogAudit = .empty
 
     public init() {}
 
     public func getCatalogAudit() -> CatalogAudit {
         lastCatalogAudit
+    }
+
+    public func getScanIssues() -> [ScanIssue] {
+        allIssues.sorted { $0.file < $1.file }
     }
 
     @discardableResult
@@ -139,18 +168,19 @@ public class ProjectScanner {
         configuration: ProjectScanConfiguration = ProjectScanConfiguration()
     ) -> ScanReport {
         allStrings = []
+        allIssues = []
         lastCatalogAudit = .empty
         print("Scanning project at: \(path)", to: &stderr)
 
         guard let files = SourceFileFilter.collectFiles(at: path, fileManager: fileManager) else {
             print("Error: Cannot enumerate directory contents", to: &stderr)
-            return ScanReport(strings: [], catalog: .empty)
+            return ScanReport(strings: [], catalog: .empty, issues: [])
         }
 
         let totalFiles = files.count
         if totalFiles == 0 {
             configuration.onNoScannableFiles?()
-            return ScanReport(strings: [], catalog: .empty)
+            return ScanReport(strings: [], catalog: .empty, issues: [])
         }
 
         var processedFiles = 0
@@ -165,6 +195,11 @@ public class ProjectScanner {
                 let message = "Error scanning \(file.path): \(error)"
                 print(message, to: &stderr)
                 configuration.onFileError?(message)
+                self.resultsLock.lock()
+                self.allIssues.append(
+                    ScanIssue(file: file.path, message: "\(error)", kind: .ioError)
+                )
+                self.resultsLock.unlock()
             }
 
             self.progressLock.lock()
@@ -206,7 +241,12 @@ public class ProjectScanner {
             outputResults()
         }
 
-        return ScanReport(strings: getScanResults(), catalog: lastCatalogAudit)
+        let issues = getScanIssues()
+        if !issues.isEmpty {
+            print("Scan issues: \(issues.count) file(s) reported problems", to: &stderr)
+        }
+
+        return ScanReport(strings: getScanResults(), catalog: lastCatalogAudit, issues: issues)
     }
 
     public func getScanResults() -> [StringLocation] {
@@ -254,9 +294,42 @@ public class ProjectScanner {
         localizationFunctions: [LocalizationFunctionSpec]
     ) throws -> [StringLocation] {
         let sourceFile = Parser.parse(source: source)
+        if sourceFile.hasError {
+            resultsLock.lock()
+            allIssues.append(
+                ScanIssue(
+                    file: filePath,
+                    message: "SwiftSyntax reported parse errors in this file",
+                    kind: .parseError
+                )
+            )
+            resultsLock.unlock()
+        }
 
         let operatorTable = OperatorTable.standardOperators
-        let foldedFile = try operatorTable.foldAll(sourceFile)
+        let foldedFile: Syntax
+        do {
+            foldedFile = try operatorTable.foldAll(sourceFile)
+        } catch {
+            resultsLock.lock()
+            allIssues.append(
+                ScanIssue(
+                    file: filePath,
+                    message: "Operator folding failed: \(error)",
+                    kind: .parseError
+                )
+            )
+            resultsLock.unlock()
+            // Fall back to unfolded tree so we still extract what we can.
+            let locationConverter = SourceLocationConverter(fileName: filePath, tree: sourceFile)
+            let visitor = StringVisitor(
+                filePath: filePath,
+                locationConverter: locationConverter,
+                localizationFunctions: localizationFunctions
+            )
+            visitor.walk(sourceFile)
+            return visitor.strings
+        }
 
         let locationConverter = SourceLocationConverter(
             fileName: filePath,

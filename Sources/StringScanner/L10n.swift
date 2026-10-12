@@ -41,6 +41,7 @@ enum L10nKey {
     case failedExportCSV
     case filesFailedScan
     case cannotEnumerate
+    case parseIssuesSummary
 }
 
 enum L10n {
@@ -99,6 +100,7 @@ enum L10n {
         case .failedExportCSV: return "Failed to export CSV: %@"
         case .filesFailedScan: return "%d files failed while scanning. Latest: %@"
         case .cannotEnumerate: return "Cannot enumerate directory contents"
+        case .parseIssuesSummary: return "%d file(s) had parse/read issues during the scan"
         }
     }
 
@@ -144,6 +146,7 @@ enum L10n {
         case .failedExportCSV: return "导出 CSV 失败：%@"
         case .filesFailedScan: return "扫描时有 %d 个文件失败。最近一次：%@"
         case .cannotEnumerate: return "无法枚举目录内容"
+        case .parseIssuesSummary: return "扫描中有 %d 个文件出现解析/读取问题"
         }
     }
 

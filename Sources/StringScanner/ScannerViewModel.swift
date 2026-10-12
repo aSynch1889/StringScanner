@@ -7,6 +7,7 @@ class ScannerViewModel: ObservableObject {
     @Published var progress: Double = 0
     @Published var results: [StringLocation] = []
     @Published var catalogAudit: CatalogAudit = .empty
+    @Published var scanIssues: [ScanIssue] = []
     @Published var selectedPath: String = ""
     @Published var errorMessage: String?
     @Published private(set) var scanFailureCount = 0
@@ -36,6 +37,7 @@ class ScannerViewModel: ObservableObject {
         progress = 0
         results = []
         catalogAudit = .empty
+        scanIssues = []
         errorMessage = nil
         scanFailureCount = 0
 
@@ -78,7 +80,11 @@ class ScannerViewModel: ObservableObject {
             DispatchQueue.main.async {
                 self.results = report.strings
                 self.catalogAudit = report.catalog
+                self.scanIssues = report.issues
                 self.isScanning = false
+                if !report.issues.isEmpty && self.errorMessage == nil {
+                    self.errorMessage = L10n.format(.parseIssuesSummary, report.issues.count)
+                }
             }
         }
     }
