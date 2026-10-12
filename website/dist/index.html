@@ -8,129 +8,158 @@
   <meta property="og:title" content="StringScanner" />
   <meta property="og:description" content="Swift / ObjC 字符串字面量审计工具" />
   <meta property="og:type" content="website" />
+  <meta property="og:image" content="./images/app-zh.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,560;9..144,650&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Public+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="./styles.css" />
   <link rel="icon" href="./favicon.svg" type="image/svg+xml" />
 </head>
 <body>
-  <div class="grain" aria-hidden="true"></div>
+  <div class="stage" aria-hidden="true">
+    <div class="stage-wash"></div>
+    <div class="stage-grid"></div>
+    <div class="stage-beam"></div>
+  </div>
 
   <header class="top">
-    <a class="logo" href="#top" aria-label="StringScanner">
-      <span class="logo-mark"></span>
-      <span class="logo-text">StringScanner</span>
+    <a class="logo" href="#top">
+      <span class="logo-bar" aria-hidden="true"></span>
+      <span>StringScanner</span>
     </a>
     <nav class="nav">
-      <a href="#features">功能</a>
-      <a href="#download">下载</a>
-      <a href="#cli">CLI</a>
-      <a class="nav-github" href="https://github.com/aSynch1889/StringScanner" target="_blank" rel="noopener">GitHub</a>
+      <a href="#preview" data-i18n="navPreview">界面</a>
+      <a href="#capabilities" data-i18n="navFeatures">能力</a>
+      <a href="#download" data-i18n="navDownload">下载</a>
+      <div class="lang-switch" role="group" aria-label="Language">
+        <button type="button" data-lang="zh" class="is-active">中文</button>
+        <button type="button" data-lang="en">EN</button>
+      </div>
+      <a class="nav-out" href="https://github.com/aSynch1889/StringScanner" target="_blank" rel="noopener">GitHub</a>
     </nav>
   </header>
 
   <main id="top">
     <section class="hero">
       <div class="hero-copy">
-        <p class="eyebrow" data-reveal>开源 · macOS 13+</p>
+        <p class="meta" data-reveal data-i18n="eyebrow">开源 · macOS 13+ · arm64</p>
         <h1 class="brand" data-reveal>StringScanner</h1>
-        <p class="lede" data-reveal>把 Swift / Objective-C 项目里的字符串字面量一次扫清，并标出尚未本地化的缺口。</p>
+        <p class="lede" data-reveal data-i18n="lede">把工程里的字符串字面量一次扫清，标出还没本地化的缺口。</p>
         <div class="cta" data-reveal>
-          <a class="btn btn-primary" href="#download">下载安装包</a>
-          <a class="btn btn-ghost" href="https://github.com/aSynch1889/StringScanner" target="_blank" rel="noopener">查看源码</a>
+          <a class="btn btn-fill" href="#download" data-i18n="ctaDownload">下载安装包</a>
+          <a class="btn btn-line" href="#preview" data-i18n="ctaPreview">看真实界面</a>
         </div>
       </div>
 
-      <div class="hero-visual" data-reveal aria-hidden="true">
-        <div class="scan-stage">
-          <div class="scan-line"></div>
-          <div class="window-chrome">
-            <span></span><span></span><span></span>
-            <strong>project · Results</strong>
-          </div>
-          <ul class="scan-rows">
-            <li><code>"Welcome back"</code><em>localized</em></li>
-            <li class="plain"><code>"Retry later"</code><em>plain</em></li>
-            <li><code>"Settings"</code><em>localized</em></li>
-            <li class="plain"><code>"Debug dump"</code><em>plain</em></li>
-            <li><code>"Continue"</code><em>localized</em></li>
-          </ul>
+      <figure class="hero-plane" data-reveal>
+        <img
+          id="heroShot"
+          src="./images/app-zh.png"
+          width="1100"
+          height="720"
+          alt="StringScanner 应用界面截图"
+          data-i18n-alt="shotAlt"
+        />
+        <span class="scan-rail" aria-hidden="true"></span>
+      </figure>
+    </section>
+
+    <section id="preview" class="band preview">
+      <div class="band-head">
+        <div>
+          <p class="kicker" data-i18n="previewKicker">产品截图</p>
+          <h2 data-i18n="previewTitle">侧栏扫描，按文件审字面量</h2>
+        </div>
+        <div class="preview-tabs" data-reveal role="tablist">
+          <button type="button" class="is-active" data-shot="zh" role="tab" aria-selected="true">简体中文</button>
+          <button type="button" data-shot="en" role="tab" aria-selected="false">English</button>
         </div>
       </div>
+      <p class="band-lede" data-i18n="previewLede">导出、筛选、主题与语言都在同一窗口里，不靠运行时截图猜漏翻。</p>
+      <figure class="preview-plane" data-reveal>
+        <img
+          id="previewShot"
+          src="./images/app-zh.png"
+          width="1100"
+          height="720"
+          alt="StringScanner 简体中文界面"
+        />
+      </figure>
     </section>
 
-    <section id="features" class="section features">
-      <header class="section-head" data-reveal>
-        <h2>为本地化审计而设计</h2>
-        <p>在源码层面找到字符串，而不是依赖运行时截图或人工翻文件。</p>
-      </header>
-      <div class="feature-grid">
-        <article data-reveal>
-          <h3>Swift + ObjC</h3>
-          <p>覆盖 <code>.swift</code>、<code>.m</code>、<code>.h</code>，识别 <code>NSLocalizedString</code>、<code>String(localized:)</code>、<code>Text</code> 等常见本地化写法。</p>
-        </article>
-        <article data-reveal>
-          <h3>GUI 与 CLI</h3>
-          <p>侧边栏一键扫描与筛选导出；命令行适合脚本、CI 与管道输出 JSON。</p>
-        </article>
-        <article data-reveal>
-          <h3>并发与过滤</h3>
-          <p>多线程扫描，自动跳过 Pods、Tests、DerivedData 等噪音目录。</p>
-        </article>
-      </div>
-    </section>
-
-    <section id="download" class="section download">
-      <header class="section-head" data-reveal>
-        <h2>下载</h2>
-        <p>当前版本 v1.1.0（build 722d038），面向 Apple Silicon（arm64）。首次打开若被拦截，请右键「打开」，或执行下方 quarantine 命令。</p>
-      </header>
-      <div class="download-cards">
-        <a class="dl-card" data-reveal href="./downloads/StringScanner-1.1.0-722d038-macos-arm64.zip">
+    <section id="capabilities" class="band capabilities">
+      <p class="kicker" data-i18n="capKicker">能力</p>
+      <h2 data-i18n="featuresTitle">在源码里找字符串</h2>
+      <ul class="cap-list">
+        <li data-reveal>
+          <span class="cap-index">01</span>
           <div>
-            <h3>macOS GUI</h3>
-            <p>拖入「应用程序」即可使用的 <code>.app</code> 安装包</p>
+            <h3 data-i18n="f1Title">Swift 与 Objective-C</h3>
+            <p data-i18n="f1Body">覆盖 .swift / .m / .h，识别 NSLocalizedString、String(localized:)、Text 等常见写法。</p>
           </div>
-          <span class="dl-meta">
-            <strong>下载 .zip</strong>
-            <small>v1.1.0 · 722d038 · arm64</small>
-          </span>
-        </a>
-        <a class="dl-card" data-reveal href="./downloads/stringscanner-cli-1.1.0-722d038-macos-arm64.zip">
+        </li>
+        <li data-reveal>
+          <span class="cap-index">02</span>
           <div>
-            <h3>CLI</h3>
-            <p><code>stringscanner-cli</code> 可执行文件，适合终端与自动化</p>
+            <h3 data-i18n="f2Title">GUI 与 CLI 同一套引擎</h3>
+            <p data-i18n="f2Body">侧栏一键扫描、筛选、导出；命令行进脚本与 CI。</p>
           </div>
-          <span class="dl-meta">
-            <strong>下载 .zip</strong>
-            <small>v1.1.0 · 722d038 · arm64</small>
-          </span>
-        </a>
-      </div>
-      <pre class="hint" data-reveal><code>xattr -dr com.apple.quarantine ~/Downloads/StringScanner.app</code></pre>
+        </li>
+        <li data-reveal>
+          <span class="cap-index">03</span>
+          <div>
+            <h3 data-i18n="f3Title">直接进 Xcode</h3>
+            <p data-i18n="f3Body">导出 .xcstrings / .strings，也可 JSON、CSV，并支持自定义本地化包装。</p>
+          </div>
+        </li>
+      </ul>
     </section>
 
-    <section id="cli" class="section cli">
-      <header class="section-head" data-reveal>
-        <h2>三分钟上手 CLI</h2>
-        <p>解压后赋予执行权限，即可扫描整个工程目录。</p>
-      </header>
-      <pre class="terminal" data-reveal><code><span class="cmt"># 安装</span>
+    <section id="download" class="band download">
+      <p class="kicker" data-i18n="downloadTitle">下载</p>
+      <h2 data-i18n="downloadHeading">装上就能扫</h2>
+      <p class="band-lede" data-i18n="downloadLede">v1.1.0 · build 722d038 · Apple Silicon。若被拦截，右键「打开」，或执行下方 quarantine 命令。</p>
+
+      <div class="dl-rows">
+        <a class="dl-row" data-reveal href="./downloads/StringScanner-1.1.0-722d038-macos-arm64.zip">
+          <div>
+            <strong data-i18n="dlGuiTitle">macOS GUI</strong>
+            <span data-i18n="dlGuiBody">拖进「应用程序」的 .app</span>
+          </div>
+          <em data-i18n="dlAction">下载 .zip</em>
+        </a>
+        <a class="dl-row" data-reveal href="./downloads/stringscanner-cli-1.1.0-722d038-macos-arm64.zip">
+          <div>
+            <strong data-i18n="dlCliTitle">CLI</strong>
+            <span data-i18n="dlCliBody">stringscanner-cli，适合终端与自动化</span>
+          </div>
+          <em data-i18n="dlAction">下载 .zip</em>
+        </a>
+      </div>
+      <pre class="code-block" data-reveal><code>xattr -dr com.apple.quarantine ~/Downloads/StringScanner.app</code></pre>
+    </section>
+
+    <section id="cli" class="band cli">
+      <div class="cli-copy">
+        <p class="kicker" data-i18n="cliKicker">命令行</p>
+        <h2 data-i18n="cliTitle">三分钟上手</h2>
+        <p class="band-lede" data-i18n="cliLede">解压、赋权，直接扫整个工程目录。</p>
+      </div>
+      <pre class="terminal" data-reveal><code><span class="cmt"># install</span>
 chmod +x stringscanner-cli
 sudo mv stringscanner-cli /usr/local/bin/
 
-<span class="cmt"># 扫描项目，写出 JSON</span>
+<span class="cmt"># scan</span>
 stringscanner-cli ~/Projects/MyApp
 
-<span class="cmt"># 管道输出</span>
-stringscanner-cli ~/Projects/MyApp --stdout | jq 'length'</code></pre>
+<span class="cmt"># export String Catalog</span>
+stringscanner-cli ~/Projects/MyApp --export-xcstrings ./Localizable.xcstrings</code></pre>
     </section>
   </main>
 
   <footer class="foot">
-    <div>
-      <span class="logo-mark small"></span>
+    <div class="logo">
+      <span class="logo-bar" aria-hidden="true"></span>
       <strong>StringScanner</strong>
       <span>Apache-2.0</span>
     </div>
