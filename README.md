@@ -16,7 +16,16 @@ StringScanner 是一个用于扫描 Swift / Objective-C 项目中字符串的工
 - macOS 13.0 或更高版本
 - Swift 5.9 或更高版本（详见 [docs/COMPATIBILITY.md](docs/COMPATIBILITY.md)）
 
-## 安装
+## 官网与安装包
+
+推广站（Cloudflare 免费托管）：[https://stringscanner.findo.workers.dev](https://stringscanner.findo.workers.dev)
+
+可直接下载 macOS Apple Silicon 安装包：
+
+- [GUI（.app）](https://stringscanner.findo.workers.dev/downloads/StringScanner-macos-arm64.zip)
+- [CLI](https://stringscanner.findo.workers.dev/downloads/stringscanner-cli-macos-arm64.zip)
+
+## 从源码安装
 
 ```bash
 git clone https://github.com/aSynch1889/StringScanner.git

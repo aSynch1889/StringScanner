@@ -31,6 +31,11 @@ playground.xcworkspace
 
 .build/
 
+# Website release artifacts (rebuild with website/scripts/package-downloads.sh)
+website/dist/downloads/*.zip
+website/node_modules/
+.wrangler/
+
 # CocoaPods
 #
 # We recommend against adding the Pods directory to your .gitignore. However

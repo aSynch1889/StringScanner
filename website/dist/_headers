@@ -1,0 +1,7 @@
+/*
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+
+/downloads/*
+  Content-Disposition: attachment
+  Cache-Control: public, max-age=3600
