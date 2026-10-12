@@ -42,6 +42,12 @@ enum L10nKey {
     case filesFailedScan
     case cannotEnumerate
     case parseIssuesSummary
+    case updates
+    case versionLabel
+    case checkForUpdates
+    case upToDate
+    case updateAvailable
+    case openReleasePage
 }
 
 enum L10n {
@@ -101,6 +107,12 @@ enum L10n {
         case .filesFailedScan: return "%d files failed while scanning. Latest: %@"
         case .cannotEnumerate: return "Cannot enumerate directory contents"
         case .parseIssuesSummary: return "%d file(s) had parse/read issues during the scan"
+        case .updates: return "Updates"
+        case .versionLabel: return "Version %@"
+        case .checkForUpdates: return "Check for Updates"
+        case .upToDate: return "You're on the latest version (%@)."
+        case .updateAvailable: return "Update available: %@"
+        case .openReleasePage: return "Open release page"
         }
     }
 
@@ -147,6 +159,12 @@ enum L10n {
         case .filesFailedScan: return "扫描时有 %d 个文件失败。最近一次：%@"
         case .cannotEnumerate: return "无法枚举目录内容"
         case .parseIssuesSummary: return "扫描中有 %d 个文件出现解析/读取问题"
+        case .updates: return "更新"
+        case .versionLabel: return "版本 %@"
+        case .checkForUpdates: return "检查更新"
+        case .upToDate: return "已是最新版本（%@）。"
+        case .updateAvailable: return "发现新版本：%@"
+        case .openReleasePage: return "打开发布页"
         }
     }
 

@@ -47,6 +47,9 @@ struct ContentView: View {
 struct SidebarView: View {
     @ObservedObject var viewModel: ScannerViewModel
     @EnvironmentObject private var settings: AppSettings
+    @State private var updateMessage: String?
+    @State private var updateURL: URL?
+    @State private var isCheckingUpdate = false
 
     private var hasFolder: Bool { !viewModel.selectedPath.isEmpty }
     private var canScan: Bool { hasFolder && !viewModel.isScanning }
@@ -253,6 +256,55 @@ struct SidebarView: View {
                     .font(.system(size: 11))
                     .foregroundStyle(AppTheme.tertiaryText)
             }
+
+            VStack(alignment: .leading, spacing: 8) {
+                sectionLabel(L10n.t(.updates))
+                Text(L10n.format(.versionLabel, AppVersion.current))
+                    .font(AppTheme.monoCaption)
+                    .foregroundStyle(AppTheme.secondaryText)
+                Button {
+                    Task { await checkForUpdates() }
+                } label: {
+                    HStack {
+                        if isCheckingUpdate {
+                            ProgressView().controlSize(.small)
+                        }
+                        Text(L10n.t(.checkForUpdates))
+                    }
+                }
+                .buttonStyle(.bordered)
+                .disabled(isCheckingUpdate)
+
+                if let updateMessage {
+                    Text(updateMessage)
+                        .font(.system(size: 11))
+                        .foregroundStyle(AppTheme.secondaryText)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                if let updateURL {
+                    Link(L10n.t(.openReleasePage), destination: updateURL)
+                        .font(.system(size: 12, weight: .semibold))
+                }
+            }
+        }
+    }
+
+    @MainActor
+    private func checkForUpdates() async {
+        isCheckingUpdate = true
+        updateMessage = nil
+        updateURL = nil
+        defer { isCheckingUpdate = false }
+
+        switch await UpdateChecker.check() {
+        case .upToDate(let current):
+            updateMessage = L10n.format(.upToDate, current)
+        case .available(let release):
+            updateMessage = L10n.format(.updateAvailable, release.tagName)
+            updateURL = release.htmlURL
+        case .failed(let message):
+            updateMessage = message
+            updateURL = AppVersion.releasesPage
         }
     }
 
