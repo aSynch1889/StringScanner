@@ -296,14 +296,6 @@ struct ResultsView: View {
         }
     }
 
-    private var countLabel: String {
-        L10n.format(
-            .stringsCount,
-            filteredResults.count.formatted() as CVarArg,
-            viewModel.results.count.formatted() as CVarArg
-        )
-    }
-
     var body: some View {
         ZStack {
             MeshBackdrop()
@@ -319,8 +311,7 @@ struct ResultsView: View {
             }
         }
         .frame(minWidth: 560)
-        .navigationTitle("StringScanner")
-        .navigationSubtitle(viewModel.results.isEmpty ? L10n.t(.brandSubtitle) : countLabel)
+        .navigationTitle("")
         .searchable(
             text: $searchText,
             placement: .toolbar,
