@@ -363,6 +363,12 @@ struct ResultsView: View {
         }
     }
 
+    private var groupedResults: [(file: String, items: [StringLocation])] {
+        Dictionary(grouping: filteredResults, by: \.file)
+            .map { (file: $0.key, items: $0.value) }
+            .sorted { $0.file < $1.file }
+    }
+
     var body: some View {
         ZStack {
             MeshBackdrop()
@@ -464,11 +470,30 @@ struct ResultsView: View {
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
-                List(filteredResults, id: \.self) { result in
-                    resultRow(result)
-                        .listRowInsets(EdgeInsets(top: 10, leading: 16, bottom: 10, trailing: 16))
-                        .listRowBackground(AppTheme.elevatedBackground.opacity(0.72))
-                        .listRowSeparatorTint(AppTheme.separator)
+                List {
+                    ForEach(groupedResults, id: \.file) { group in
+                        Section {
+                            ForEach(group.items, id: \.self) { result in
+                                resultRow(result)
+                                    .listRowInsets(EdgeInsets(top: 10, leading: 16, bottom: 10, trailing: 16))
+                                    .listRowBackground(AppTheme.elevatedBackground.opacity(0.72))
+                                    .listRowSeparatorTint(AppTheme.separator)
+                            }
+                        } header: {
+                            HStack {
+                                Text(displayPath(for: group.file))
+                                    .font(.system(size: 12, weight: .semibold))
+                                    .foregroundStyle(AppTheme.secondaryText)
+                                    .lineLimit(1)
+                                    .truncationMode(.middle)
+                                Spacer()
+                                Text("\(group.items.count)")
+                                    .font(AppTheme.monoCaption)
+                                    .foregroundStyle(AppTheme.tertiaryText)
+                            }
+                            .textCase(nil)
+                        }
+                    }
                 }
                 .listStyle(.plain)
                 .scrollContentBackground(.hidden)
@@ -487,47 +512,91 @@ struct ResultsView: View {
 
                 Spacer(minLength: 8)
 
-                if result.isLocalized {
-                    Text(L10n.t(.localizedBadge))
-                        .font(.system(size: 9, weight: .bold, design: .rounded))
-                        .tracking(0.4)
-                        .foregroundStyle(AppTheme.tealDeep)
-                        .padding(.horizontal, 7)
-                        .padding(.vertical, 3)
-                        .background(
-                            Capsule(style: .continuous)
-                                .fill(AppTheme.teal.opacity(0.16))
-                        )
+                if result.isInterpolated {
+                    badge(L10n.t(.interpolatedBadge), tint: AppTheme.secondaryText)
                 }
-
+                if result.isLocalized {
+                    badge(L10n.t(.localizedBadge), tint: AppTheme.tealDeep, fill: AppTheme.teal.opacity(0.16))
+                }
                 if result.catalogStatus == .missing {
-                    Text(L10n.t(.catalogMissingBadge))
-                        .font(.system(size: 9, weight: .bold, design: .rounded))
-                        .tracking(0.4)
-                        .foregroundStyle(Color(red: 0.72, green: 0.32, blue: 0.18))
-                        .padding(.horizontal, 7)
-                        .padding(.vertical, 3)
-                        .background(
-                            Capsule(style: .continuous)
-                                .fill(Color(red: 0.86, green: 0.45, blue: 0.22).opacity(0.16))
-                        )
+                    badge(
+                        L10n.t(.catalogMissingBadge),
+                        tint: Color(red: 0.72, green: 0.32, blue: 0.18),
+                        fill: Color(red: 0.86, green: 0.45, blue: 0.22).opacity(0.16)
+                    )
                 }
             }
 
             HStack(spacing: 8) {
-                Text(displayPath(for: result.file))
-                    .lineLimit(1)
-                    .truncationMode(.middle)
-                Text("·")
                 Text("L\(result.line)")
                 Text("·")
                 Text("C\(result.column)")
+                if result.origin != .sourceCode {
+                    Text("·")
+                    Text(result.origin.rawValue)
+                }
+                Spacer(minLength: 8)
+                Button {
+                    copyContent(result.content)
+                } label: {
+                    Image(systemName: "doc.on.doc")
+                }
+                .buttonStyle(.borderless)
+                .help(L10n.t(.copyKey))
+
+                Button {
+                    openInXcode(result)
+                } label: {
+                    Image(systemName: "chevron.left.forwardslash.chevron.right")
+                }
+                .buttonStyle(.borderless)
+                .help(L10n.t(.openInXcode))
             }
             .font(AppTheme.monoCaption)
             .foregroundStyle(AppTheme.tertiaryText)
-            .textSelection(.enabled)
         }
         .padding(.vertical, 2)
+        .contextMenu {
+            Button(L10n.t(.copyKey)) { copyContent(result.content) }
+            Button(L10n.t(.openInXcode)) { openInXcode(result) }
+            Button(L10n.t(.revealInFinder)) { revealInFinder(result.file) }
+        }
+        .onTapGesture(count: 2) {
+            openInXcode(result)
+        }
+    }
+
+    private func badge(_ text: String, tint: Color, fill: Color = Color.clear) -> some View {
+        Text(text)
+            .font(.system(size: 9, weight: .bold, design: .rounded))
+            .tracking(0.4)
+            .foregroundStyle(tint)
+            .padding(.horizontal, 7)
+            .padding(.vertical, 3)
+            .background(
+                Capsule(style: .continuous)
+                    .fill(fill == .clear ? tint.opacity(0.12) : fill)
+            )
+    }
+
+    private func copyContent(_ value: String) {
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(value, forType: .string)
+    }
+
+    private func openInXcode(_ result: StringLocation) {
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: "/usr/bin/xed")
+        process.arguments = ["--line", "\(result.line)", result.file]
+        do {
+            try process.run()
+        } catch {
+            NSWorkspace.shared.open(URL(fileURLWithPath: result.file))
+        }
+    }
+
+    private func revealInFinder(_ path: String) {
+        NSWorkspace.shared.activateFileViewerSelecting([URL(fileURLWithPath: path)])
     }
 
     private func displayPath(for file: String) -> String {

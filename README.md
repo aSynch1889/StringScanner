@@ -44,8 +44,11 @@ swift build
 # 仅输出 JSON 到 stdout（便于管道）
 .build/debug/stringscanner-cli /path/to/project --stdout
 
-# 指定输出文件
-.build/debug/stringscanner-cli /path/to/project -o /tmp/strings.json
+# 指定输出文件；完整报告含 catalog / issues
+.build/debug/stringscanner-cli /path/to/project -o /tmp/strings.json --full-report
+
+# 自定义本地化包装、放宽字符串分类过滤
+.build/debug/stringscanner-cli /path/to/project --localize-func L10n.t,tr --include-kinds all
 ```
 
 ### 图形界面（GUI）

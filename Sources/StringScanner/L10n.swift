@@ -48,6 +48,10 @@ enum L10nKey {
     case upToDate
     case updateAvailable
     case openReleasePage
+    case copyKey
+    case openInXcode
+    case revealInFinder
+    case interpolatedBadge
 }
 
 enum L10n {
@@ -113,6 +117,10 @@ enum L10n {
         case .upToDate: return "You're on the latest version (%@)."
         case .updateAvailable: return "Update available: %@"
         case .openReleasePage: return "Open release page"
+        case .copyKey: return "Copy string"
+        case .openInXcode: return "Open in Xcode"
+        case .revealInFinder: return "Reveal in Finder"
+        case .interpolatedBadge: return "INTERPOLATED"
         }
     }
 
@@ -165,6 +173,10 @@ enum L10n {
         case .upToDate: return "已是最新版本（%@）。"
         case .updateAvailable: return "发现新版本：%@"
         case .openReleasePage: return "打开发布页"
+        case .copyKey: return "复制字符串"
+        case .openInXcode: return "在 Xcode 中打开"
+        case .revealInFinder: return "在 Finder 中显示"
+        case .interpolatedBadge: return "插值"
         }
     }
 
