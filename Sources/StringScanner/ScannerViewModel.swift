@@ -26,7 +26,7 @@ class ScannerViewModel: ObservableObject {
         }
     }
 
-    func startScan() {
+    func startScan(localizationFunctions: [LocalizationFunctionSpec] = []) {
         guard !selectedPath.isEmpty else {
             errorMessage = L10n.t(.selectFolderFirst)
             return
@@ -45,6 +45,7 @@ class ScannerViewModel: ObservableObject {
 
             let configuration = ProjectScanConfiguration(
                 emitJSONToStandardOutput: false,
+                localizationFunctions: localizationFunctions,
                 onProgress: { fraction in
                     DispatchQueue.main.async {
                         self.progress = fraction

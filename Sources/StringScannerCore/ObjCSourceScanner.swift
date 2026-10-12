@@ -3,11 +3,16 @@ import Foundation
 enum ObjCSourceScanner {
     private static let stringLiteralPattern = #"@"((?:\\.|[^"\\])*)""#
 
-    static func scan(source: String, filePath: String) -> [StringLocation] {
+    static func scan(
+        source: String,
+        filePath: String,
+        localizationFunctions: [LocalizationFunctionSpec] = LocalizationFunctionSpec.builtInDefaults
+    ) -> [StringLocation] {
         guard let regex = try? NSRegularExpression(pattern: stringLiteralPattern) else {
             return []
         }
 
+        let markers = localizationFunctions.map(\.pattern).filter { !$0.contains(".") }
         let nsSource = source as NSString
         let fullRange = NSRange(location: 0, length: nsSource.length)
         var results: [StringLocation] = []
@@ -32,7 +37,7 @@ enum ObjCSourceScanner {
             let localizedContext = nsSource.substring(
                 with: NSRange(location: max(0, fullMatchRange.location - 80), length: min(80, fullMatchRange.location))
             )
-            let isLocalized = localizedContext.contains("NSLocalizedString")
+            let isLocalized = markers.contains { localizedContext.contains($0) }
 
             results.append(StringLocation(
                 file: filePath,

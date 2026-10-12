@@ -9,6 +9,7 @@ struct CommandLineTool {
         var outputFile: URL?
         var fullReport: Bool
         var enableCatalogAudit: Bool
+        var localizationFunctions: [LocalizationFunctionSpec]
     }
 
     static func main() {
@@ -23,7 +24,8 @@ struct CommandLineTool {
         let scanner = ProjectScanner()
         let configuration = ProjectScanConfiguration(
             emitJSONToStandardOutput: false,
-            enableCatalogAudit: options.enableCatalogAudit
+            enableCatalogAudit: options.enableCatalogAudit,
+            localizationFunctions: options.localizationFunctions
         )
         let report = scanner.scanProjectReport(at: options.scanPath, configuration: configuration)
 
@@ -68,6 +70,7 @@ struct CommandLineTool {
         var outputFile: URL?
         var fullReport = false
         var enableCatalogAudit = true
+        var localizationFunctions: [LocalizationFunctionSpec] = []
 
         while !args.isEmpty {
             let arg = args.removeFirst()
@@ -78,6 +81,13 @@ struct CommandLineTool {
                 fullReport = true
             case "--no-catalog":
                 enableCatalogAudit = false
+            case "--localize-func":
+                guard let value = args.first else {
+                    print("Error: missing value for \(arg)", to: &stderr)
+                    exit(1)
+                }
+                args.removeFirst()
+                localizationFunctions.append(contentsOf: LocalizationFunctionMatcher.parseList(value))
             case "--output", "-o":
                 guard let path = args.first else {
                     print("Error: missing value for \(arg)", to: &stderr)
@@ -103,7 +113,8 @@ struct CommandLineTool {
             stdoutOnly: stdoutOnly,
             outputFile: outputFile,
             fullReport: fullReport,
-            enableCatalogAudit: enableCatalogAudit
+            enableCatalogAudit: enableCatalogAudit,
+            localizationFunctions: localizationFunctions
         )
     }
 
@@ -115,6 +126,7 @@ struct CommandLineTool {
           --stdout          Print JSON to stdout (do not write a file)
           --full-report     Include catalog audit alongside strings
           --no-catalog      Skip .strings / .xcstrings cross-check
+          --localize-func   Comma-separated wrappers, e.g. L10n.t,tr
           -o, --output PATH Write JSON to PATH (default: ./string_scan_results.json)
           -h, --help        Show this help
         """)

@@ -27,6 +27,8 @@ enum L10nKey {
     case stringsCount
     case localizedBadge
     case catalogMissingBadge
+    case localizeFunctions
+    case localizeFunctionsHint
     case appearance
     case appearanceSystem
     case appearanceLight
@@ -83,6 +85,8 @@ enum L10n {
         case .stringsCount: return "%@ of %@ strings"
         case .localizedBadge: return "LOCALIZED"
         case .catalogMissingBadge: return "NOT IN CATALOG"
+        case .localizeFunctions: return "Localize wrappers"
+        case .localizeFunctionsHint: return "Comma-separated, e.g. L10n.t,tr"
         case .appearance: return "Appearance"
         case .appearanceSystem: return "System"
         case .appearanceLight: return "Light"
@@ -126,6 +130,8 @@ enum L10n {
         case .stringsCount: return "%@ / %@ 条字符串"
         case .localizedBadge: return "已本地化"
         case .catalogMissingBadge: return "目录缺失"
+        case .localizeFunctions: return "本地化包装"
+        case .localizeFunctionsHint: return "逗号分隔，例如 L10n.t,tr"
         case .appearance: return "外观"
         case .appearanceSystem: return "跟随系统"
         case .appearanceLight: return "浅色"

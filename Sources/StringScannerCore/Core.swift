@@ -18,7 +18,7 @@ public struct FileHandleOutputStream: TextOutputStream {
 
 public var stderr = FileHandleOutputStream(fileHandle: .standardError)
 
-public struct StringLocation: Codable, Hashable {
+public struct StringLocation: Codable, Hashable, Sendable {
     public let file: String
     public let line: Int
     public let column: Int
@@ -125,10 +125,12 @@ public class ProjectScanner {
 
         var processedFiles = 0
 
+        let localizationFunctions = configuration.resolvedLocalizationFunctions
+
         DispatchQueue.concurrentPerform(iterations: totalFiles) { index in
             let file = files[index]
             do {
-                try self.scanFile(at: file)
+                try self.scanFile(at: file, localizationFunctions: localizationFunctions)
             } catch {
                 let message = "Error scanning \(file.path): \(error)"
                 print(message, to: &stderr)
@@ -179,15 +181,26 @@ public class ProjectScanner {
         }
     }
     
-    private func scanFile(at url: URL) throws {
+    private func scanFile(
+        at url: URL,
+        localizationFunctions: [LocalizationFunctionSpec]
+    ) throws {
         let source = try String(contentsOf: url, encoding: .utf8)
         let found: [StringLocation]
 
         switch url.pathExtension.lowercased() {
         case "swift":
-            found = try scanSwiftSource(source, filePath: url.path)
+            found = try scanSwiftSource(
+                source,
+                filePath: url.path,
+                localizationFunctions: localizationFunctions
+            )
         case "m", "h":
-            found = ObjCSourceScanner.scan(source: source, filePath: url.path)
+            found = ObjCSourceScanner.scan(
+                source: source,
+                filePath: url.path,
+                localizationFunctions: localizationFunctions
+            )
         default:
             found = []
         }
@@ -197,7 +210,11 @@ public class ProjectScanner {
         resultsLock.unlock()
     }
 
-    private func scanSwiftSource(_ source: String, filePath: String) throws -> [StringLocation] {
+    private func scanSwiftSource(
+        _ source: String,
+        filePath: String,
+        localizationFunctions: [LocalizationFunctionSpec]
+    ) throws -> [StringLocation] {
         let sourceFile = Parser.parse(source: source)
 
         let operatorTable = OperatorTable.standardOperators
@@ -210,7 +227,8 @@ public class ProjectScanner {
 
         let visitor = StringVisitor(
             filePath: filePath,
-            locationConverter: locationConverter
+            locationConverter: locationConverter,
+            localizationFunctions: localizationFunctions
         )
 
         visitor.walk(foldedFile)
@@ -236,22 +254,28 @@ public class ProjectScanner {
 public class StringVisitor: SyntaxVisitor {
     let filePath: String
     let locationConverter: SourceLocationConverter
+    let localizationFunctions: [LocalizationFunctionSpec]
     public var strings: [StringLocation] = []
-    
-    public init(filePath: String, locationConverter: SourceLocationConverter) {
+
+    public init(
+        filePath: String,
+        locationConverter: SourceLocationConverter,
+        localizationFunctions: [LocalizationFunctionSpec] = LocalizationFunctionSpec.builtInDefaults
+    ) {
         self.filePath = filePath
         self.locationConverter = locationConverter
+        self.localizationFunctions = localizationFunctions
         super.init(viewMode: .sourceAccurate)
     }
-    
+
     public override func visit(_ node: StringLiteralExprSyntax) -> SyntaxVisitorContinueKind {
         let location = node.startLocation(converter: locationConverter)
         let content = node.segments
             .compactMap { $0.as(StringSegmentSyntax.self)?.content.text }
             .joined()
-        
+
         let isLocalized = isInLocalizationContext(node)
-        
+
         strings.append(StringLocation(
             file: filePath,
             line: location.line,
@@ -259,15 +283,16 @@ public class StringVisitor: SyntaxVisitor {
             content: content,
             isLocalized: isLocalized
         ))
-        
+
         return .skipChildren
     }
-    
+
     private func isInLocalizationContext(_ node: StringLiteralExprSyntax) -> Bool {
         var current: Syntax? = Syntax(node).parent
         while let syntax = current {
             if let functionCall = syntax.as(FunctionCallExprSyntax.self),
-               matchesLocalizationCall(functionCall, stringNode: node) {
+               containsStringLiteral(node, in: functionCall),
+               localizationFunctions.contains(where: { $0.matches(functionCall: functionCall) }) {
                 return true
             }
             current = syntax.parent
@@ -275,47 +300,15 @@ public class StringVisitor: SyntaxVisitor {
         return false
     }
 
-    private func matchesLocalizationCall(
-        _ functionCall: FunctionCallExprSyntax,
-        stringNode: StringLiteralExprSyntax
-    ) -> Bool {
-        if isStringLiteral(stringNode, in: functionCall, callName: "NSLocalizedString") {
-            return true
-        }
-        if isStringLiteral(stringNode, in: functionCall, callName: "Text") {
-            return true
-        }
-        if isStringLiteral(stringNode, in: functionCall, callName: "LocalizedStringKey") {
-            return true
-        }
-
-        if let ref = functionCall.calledExpression.as(DeclReferenceExprSyntax.self),
-           ref.baseName.text == "String" {
-            for argument in functionCall.arguments where argument.label?.text == "localized" {
-                if argument.expression.as(StringLiteralExprSyntax.self)?.position == stringNode.position {
-                    return true
-                }
-            }
-        }
-
-        return false
-    }
-
-    private func isStringLiteral(
+    private func containsStringLiteral(
         _ node: StringLiteralExprSyntax,
-        in functionCall: FunctionCallExprSyntax,
-        callName: String
+        in functionCall: FunctionCallExprSyntax
     ) -> Bool {
-        guard let ref = functionCall.calledExpression.as(DeclReferenceExprSyntax.self),
-              ref.baseName.text == callName else {
-            return false
-        }
-
-        return functionCall.arguments.contains { argument in
+        functionCall.arguments.contains { argument in
             argument.expression.as(StringLiteralExprSyntax.self)?.position == node.position
         }
     }
-    
+
     public override func visit(_ node: RegexLiteralExprSyntax) -> SyntaxVisitorContinueKind {
         .skipChildren
     }

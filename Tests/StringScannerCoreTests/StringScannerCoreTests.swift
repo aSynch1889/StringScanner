@@ -88,6 +88,27 @@ final class StringScannerCoreTests: XCTestCase {
         XCTAssertTrue(results.contains { $0.content == "objc_localized" && $0.isLocalized })
     }
 
+    func testCustomLocalizationWrappersAreDetected() throws {
+        try copyFixture("custom_localize.swift", into: tempRoot)
+
+        let scanner = ProjectScanner()
+        let results = scanner.scanProject(
+            at: tempRoot.path,
+            configuration: ProjectScanConfiguration(
+                emitJSONToStandardOutput: false,
+                enableCatalogAudit: false,
+                localizationFunctions: [
+                    LocalizationFunctionSpec(pattern: "L10n.t"),
+                    LocalizationFunctionSpec(pattern: "tr")
+                ]
+            )
+        )
+
+        XCTAssertTrue(results.contains { $0.content == "custom_key" && $0.isLocalized })
+        XCTAssertTrue(results.contains { $0.content == "tr_key" && $0.isLocalized })
+        XCTAssertTrue(results.contains { $0.content == "still_plain" && !$0.isLocalized })
+    }
+
     func testCatalogAuditMarksMissingAndUnusedKeys() throws {
         try copyFixture("localization_sample.swift", into: tempRoot)
         let en = tempRoot.appendingPathComponent("en.lproj", isDirectory: true)

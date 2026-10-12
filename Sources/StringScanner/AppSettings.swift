@@ -1,4 +1,5 @@
 import SwiftUI
+import StringScannerCore
 
 enum AppAppearance: String, CaseIterable, Identifiable {
     case system
@@ -41,6 +42,7 @@ enum AppLanguage: String, CaseIterable, Identifiable {
 final class AppSettings: ObservableObject {
     private static let appearanceKey = "app.appearance"
     private static let languageKey = "app.language"
+    private static let localizeFuncsKey = "app.localizeFunctions"
 
     @Published var appearance: AppAppearance {
         didSet {
@@ -55,11 +57,23 @@ final class AppSettings: ObservableObject {
         }
     }
 
+    /// Comma-separated wrappers, e.g. `L10n.t,tr`
+    @Published var localizationFunctionsCSV: String {
+        didSet {
+            UserDefaults.standard.set(localizationFunctionsCSV, forKey: Self.localizeFuncsKey)
+        }
+    }
+
+    var localizationFunctions: [LocalizationFunctionSpec] {
+        LocalizationFunctionMatcher.parseList(localizationFunctionsCSV)
+    }
+
     init() {
         let appearanceRaw = UserDefaults.standard.string(forKey: Self.appearanceKey) ?? AppAppearance.system.rawValue
         let languageRaw = UserDefaults.standard.string(forKey: Self.languageKey) ?? AppLanguage.english.rawValue
         appearance = AppAppearance(rawValue: appearanceRaw) ?? .system
         language = AppLanguage(rawValue: languageRaw) ?? .english
+        localizationFunctionsCSV = UserDefaults.standard.string(forKey: Self.localizeFuncsKey) ?? ""
         L10n.language = language
     }
 }

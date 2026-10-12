@@ -156,7 +156,9 @@ struct SidebarView: View {
     }
 
     private var scanButton: some View {
-        Button(action: viewModel.startScan) {
+        Button {
+            viewModel.startScan(localizationFunctions: settings.localizationFunctions)
+        } label: {
             HStack {
                 if viewModel.isScanning {
                     ProgressView()
@@ -237,6 +239,19 @@ struct SidebarView: View {
                 }
                 .pickerStyle(.segmented)
                 .labelsHidden()
+            }
+
+            VStack(alignment: .leading, spacing: 8) {
+                sectionLabel(L10n.t(.localizeFunctions))
+                TextField("L10n.t, tr", text: Binding(
+                    get: { settings.localizationFunctionsCSV },
+                    set: { settings.localizationFunctionsCSV = $0 }
+                ))
+                .textFieldStyle(.roundedBorder)
+                .font(AppTheme.monoCaption)
+                Text(L10n.t(.localizeFunctionsHint))
+                    .font(.system(size: 11))
+                    .foregroundStyle(AppTheme.tertiaryText)
             }
         }
     }
