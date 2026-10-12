@@ -28,6 +28,7 @@ public struct StringLocation: Codable, Hashable, Sendable {
     public let kind: StringKind
     public let isInterpolated: Bool
     public let isConcatenated: Bool
+    public let origin: StringOrigin
 
     public init(
         file: String,
@@ -38,7 +39,8 @@ public struct StringLocation: Codable, Hashable, Sendable {
         catalogStatus: CatalogKeyStatus = .notApplicable,
         kind: StringKind = .copy,
         isInterpolated: Bool = false,
-        isConcatenated: Bool = false
+        isConcatenated: Bool = false,
+        origin: StringOrigin = .sourceCode
     ) {
         self.file = file
         self.line = line
@@ -49,6 +51,7 @@ public struct StringLocation: Codable, Hashable, Sendable {
         self.kind = kind
         self.isInterpolated = isInterpolated
         self.isConcatenated = isConcatenated
+        self.origin = origin
     }
 
     public func withCatalogStatus(_ status: CatalogKeyStatus) -> StringLocation {
@@ -61,7 +64,8 @@ public struct StringLocation: Codable, Hashable, Sendable {
             catalogStatus: status,
             kind: kind,
             isInterpolated: isInterpolated,
-            isConcatenated: isConcatenated
+            isConcatenated: isConcatenated,
+            origin: origin
         )
     }
 
@@ -75,6 +79,7 @@ public struct StringLocation: Codable, Hashable, Sendable {
         hasher.combine(kind)
         hasher.combine(isInterpolated)
         hasher.combine(isConcatenated)
+        hasher.combine(origin)
     }
 
     public static func == (lhs: StringLocation, rhs: StringLocation) -> Bool {
@@ -86,8 +91,15 @@ public struct StringLocation: Codable, Hashable, Sendable {
             lhs.catalogStatus == rhs.catalogStatus &&
             lhs.kind == rhs.kind &&
             lhs.isInterpolated == rhs.isInterpolated &&
-            lhs.isConcatenated == rhs.isConcatenated
+            lhs.isConcatenated == rhs.isConcatenated &&
+            lhs.origin == rhs.origin
     }
+}
+
+public enum StringOrigin: String, Codable, Sendable, Hashable {
+    case sourceCode
+    case interfaceBuilder
+    case preview
 }
 
 public struct ScanReport: Codable, Sendable {
@@ -225,6 +237,8 @@ public class ProjectScanner {
                 filePath: url.path,
                 localizationFunctions: localizationFunctions
             )
+        case "storyboard", "xib":
+            found = InterfaceBuilderScanner.scan(source: source, filePath: url.path)
         default:
             found = []
         }
@@ -309,10 +323,33 @@ public class StringVisitor: SyntaxVisitor {
             isLocalized: isLocalized,
             kind: kind,
             isInterpolated: rendered.isInterpolated,
-            isConcatenated: isInStringConcatenation(node)
+            isConcatenated: isInStringConcatenation(node),
+            origin: isInPreviewContext(node) ? .preview : .sourceCode
         ))
 
         return .skipChildren
+    }
+
+    private func isInPreviewContext(_ node: StringLiteralExprSyntax) -> Bool {
+        var current: Syntax? = Syntax(node).parent
+        while let syntax = current {
+            if let macro = syntax.as(MacroExpansionDeclSyntax.self),
+               macro.macroName.text == "Preview" {
+                return true
+            }
+            if let macro = syntax.as(MacroExpansionExprSyntax.self),
+               macro.macroName.text == "Preview" {
+                return true
+            }
+            if let structDecl = syntax.as(StructDeclSyntax.self) {
+                let inheritsPreview = structDecl.inheritanceClause?.inheritedTypes.contains {
+                    $0.type.as(IdentifierTypeSyntax.self)?.name.text == "PreviewProvider"
+                } ?? false
+                if inheritsPreview { return true }
+            }
+            current = syntax.parent
+        }
+        return false
     }
 
     private func renderLiteral(_ node: StringLiteralExprSyntax) -> (content: String, isInterpolated: Bool) {

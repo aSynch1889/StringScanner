@@ -88,6 +88,34 @@ final class StringScannerCoreTests: XCTestCase {
         XCTAssertTrue(results.contains { $0.content == "objc_localized" && $0.isLocalized })
     }
 
+    func testScansInterfaceBuilderAndPreviewStrings() throws {
+        try copyFixture("sample.xib", into: tempRoot)
+        try copyFixture("preview_sample.swift", into: tempRoot)
+
+        let scanner = ProjectScanner()
+        let results = scanner.scanProject(
+            at: tempRoot.path,
+            configuration: ProjectScanConfiguration(
+                emitJSONToStandardOutput: false,
+                enableCatalogAudit: false,
+                includedStringKinds: Set(StringKind.allCases)
+            )
+        )
+
+        XCTAssertTrue(results.contains {
+            $0.content == "Welcome Label" && $0.origin == .interfaceBuilder
+        })
+        XCTAssertTrue(results.contains {
+            $0.content == "Continue" && $0.origin == .interfaceBuilder
+        })
+        XCTAssertTrue(results.contains {
+            $0.content == "Preview Title" && $0.origin == .preview
+        })
+        XCTAssertTrue(results.contains {
+            $0.content == "Legacy Preview" && $0.origin == .preview
+        })
+    }
+
     func testInterpolatedAndConcatenatedStringsAreMarked() throws {
         try copyFixture("interpolation_sample.swift", into: tempRoot)
 

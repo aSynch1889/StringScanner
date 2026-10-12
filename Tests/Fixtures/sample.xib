@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<document>
+    <label text="Welcome Label" id="1"/>
+    <button title="Continue" id="2"/>
+    <textField placeholder="Email" id="3"/>
+</document>

@@ -1,7 +1,7 @@
 import Foundation
 
 enum SourceFileFilter {
-    private static let validExtensions: Set<String> = ["swift", "m", "h"]
+    private static let validExtensions: Set<String> = ["swift", "m", "h", "storyboard", "xib"]
 
     private static let excludedPathComponents: Set<String> = [
         "Pods", "Carthage", ".swiftpm", "Tests", "Test", "Specs",
