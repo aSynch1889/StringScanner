@@ -125,9 +125,6 @@ enum StringKindClassifier {
         return true
     }
 
-    // Keep fixture parse friendly even without importing SwiftUI at top.
-
-
     private static func looksLikeFormat(_ value: String) -> Bool {
         value.contains("%@") ||
             value.contains("%d") ||

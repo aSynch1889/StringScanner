@@ -26,6 +26,8 @@ public struct StringLocation: Codable, Hashable, Sendable {
     public let isLocalized: Bool
     public let catalogStatus: CatalogKeyStatus
     public let kind: StringKind
+    public let isInterpolated: Bool
+    public let isConcatenated: Bool
 
     public init(
         file: String,
@@ -34,7 +36,9 @@ public struct StringLocation: Codable, Hashable, Sendable {
         content: String,
         isLocalized: Bool,
         catalogStatus: CatalogKeyStatus = .notApplicable,
-        kind: StringKind = .copy
+        kind: StringKind = .copy,
+        isInterpolated: Bool = false,
+        isConcatenated: Bool = false
     ) {
         self.file = file
         self.line = line
@@ -43,6 +47,8 @@ public struct StringLocation: Codable, Hashable, Sendable {
         self.isLocalized = isLocalized
         self.catalogStatus = catalogStatus
         self.kind = kind
+        self.isInterpolated = isInterpolated
+        self.isConcatenated = isConcatenated
     }
 
     public func withCatalogStatus(_ status: CatalogKeyStatus) -> StringLocation {
@@ -53,7 +59,9 @@ public struct StringLocation: Codable, Hashable, Sendable {
             content: content,
             isLocalized: isLocalized,
             catalogStatus: status,
-            kind: kind
+            kind: kind,
+            isInterpolated: isInterpolated,
+            isConcatenated: isConcatenated
         )
     }
 
@@ -65,6 +73,8 @@ public struct StringLocation: Codable, Hashable, Sendable {
         hasher.combine(isLocalized)
         hasher.combine(catalogStatus)
         hasher.combine(kind)
+        hasher.combine(isInterpolated)
+        hasher.combine(isConcatenated)
     }
 
     public static func == (lhs: StringLocation, rhs: StringLocation) -> Bool {
@@ -74,7 +84,9 @@ public struct StringLocation: Codable, Hashable, Sendable {
             lhs.content == rhs.content &&
             lhs.isLocalized == rhs.isLocalized &&
             lhs.catalogStatus == rhs.catalogStatus &&
-            lhs.kind == rhs.kind
+            lhs.kind == rhs.kind &&
+            lhs.isInterpolated == rhs.isInterpolated &&
+            lhs.isConcatenated == rhs.isConcatenated
     }
 }
 
@@ -282,13 +294,10 @@ public class StringVisitor: SyntaxVisitor {
 
     public override func visit(_ node: StringLiteralExprSyntax) -> SyntaxVisitorContinueKind {
         let location = node.startLocation(converter: locationConverter)
-        let content = node.segments
-            .compactMap { $0.as(StringSegmentSyntax.self)?.content.text }
-            .joined()
-
+        let rendered = renderLiteral(node)
         let isLocalized = isInLocalizationContext(node)
         let kind = StringKindClassifier.classify(
-            content: content,
+            content: rendered.content,
             context: StringKindClassifier.context(for: node)
         )
 
@@ -296,12 +305,56 @@ public class StringVisitor: SyntaxVisitor {
             file: filePath,
             line: location.line,
             column: location.column,
-            content: content,
+            content: rendered.content,
             isLocalized: isLocalized,
-            kind: kind
+            kind: kind,
+            isInterpolated: rendered.isInterpolated,
+            isConcatenated: isInStringConcatenation(node)
         ))
 
         return .skipChildren
+    }
+
+    private func renderLiteral(_ node: StringLiteralExprSyntax) -> (content: String, isInterpolated: Bool) {
+        var parts: [String] = []
+        var interpolated = false
+        for segment in node.segments {
+            if let text = segment.as(StringSegmentSyntax.self) {
+                parts.append(text.content.text)
+            } else if segment.is(ExpressionSegmentSyntax.self) {
+                interpolated = true
+                parts.append("\\(...)")
+            }
+        }
+        return (parts.joined(), interpolated)
+    }
+
+    private func isInStringConcatenation(_ node: StringLiteralExprSyntax) -> Bool {
+        var current: Syntax? = Syntax(node).parent
+        while let syntax = current {
+            if let infix = syntax.as(InfixOperatorExprSyntax.self) {
+                if let op = infix.operator.as(BinaryOperatorExprSyntax.self),
+                   op.operator.text == "+" {
+                    let leftIsString = infix.leftOperand.is(StringLiteralExprSyntax.self)
+                        || containsStringLiteral(infix.leftOperand)
+                    let rightIsString = infix.rightOperand.is(StringLiteralExprSyntax.self)
+                        || containsStringLiteral(infix.rightOperand)
+                    if leftIsString && rightIsString {
+                        return true
+                    }
+                }
+            }
+            current = syntax.parent
+        }
+        return false
+    }
+
+    private func containsStringLiteral(_ expr: ExprSyntax) -> Bool {
+        if expr.is(StringLiteralExprSyntax.self) { return true }
+        if let infix = expr.as(InfixOperatorExprSyntax.self) {
+            return containsStringLiteral(infix.leftOperand) || containsStringLiteral(infix.rightOperand)
+        }
+        return false
     }
 
     private func isInLocalizationContext(_ node: StringLiteralExprSyntax) -> Bool {
