@@ -1,0 +1,6 @@
+{
+  "version": "1.1.0",
+  "build": "722d038",
+  "gui": "StringScanner-1.1.0-722d038-macos-arm64.zip",
+  "cli": "stringscanner-cli-1.1.0-722d038-macos-arm64.zip"
+}

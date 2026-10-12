@@ -26,9 +26,7 @@ jobs:
       - name: Upload release assets
         uses: softprops/action-gh-release@v2
         with:
-          files: |
-            website/dist/downloads/StringScanner-macos-arm64.zip
-            website/dist/downloads/stringscanner-cli-macos-arm64.zip
+          files: website/dist/downloads/*.zip
           generate_release_notes: true
           draft: false
         env:

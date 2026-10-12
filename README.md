@@ -22,8 +22,8 @@ StringScanner 是一个用于扫描 Swift / Objective-C 项目中字符串的工
 
 可直接下载 macOS Apple Silicon 安装包：
 
-- [GUI（.app）](https://stringscanner.findo.workers.dev/downloads/StringScanner-macos-arm64.zip)
-- [CLI](https://stringscanner.findo.workers.dev/downloads/stringscanner-cli-macos-arm64.zip)
+- [GUI（.app）](https://stringscanner.findo.workers.dev/downloads/StringScanner-1.1.0-722d038-macos-arm64.zip)
+- [CLI](https://stringscanner.findo.workers.dev/downloads/stringscanner-cli-1.1.0-722d038-macos-arm64.zip)
 
 ## 从源码安装
 
