@@ -432,6 +432,19 @@ struct ResultsView: View {
                                 .fill(AppTheme.teal.opacity(0.16))
                         )
                 }
+
+                if result.catalogStatus == .missing {
+                    Text(L10n.t(.catalogMissingBadge))
+                        .font(.system(size: 9, weight: .bold, design: .rounded))
+                        .tracking(0.4)
+                        .foregroundStyle(Color(red: 0.72, green: 0.32, blue: 0.18))
+                        .padding(.horizontal, 7)
+                        .padding(.vertical, 3)
+                        .background(
+                            Capsule(style: .continuous)
+                                .fill(Color(red: 0.86, green: 0.45, blue: 0.22).opacity(0.16))
+                        )
+                }
             }
 
             HStack(spacing: 8) {

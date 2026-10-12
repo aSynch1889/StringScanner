@@ -6,6 +6,7 @@ class ScannerViewModel: ObservableObject {
     @Published var isScanning = false
     @Published var progress: Double = 0
     @Published var results: [StringLocation] = []
+    @Published var catalogAudit: CatalogAudit = .empty
     @Published var selectedPath: String = ""
     @Published var errorMessage: String?
     @Published private(set) var scanFailureCount = 0
@@ -34,6 +35,7 @@ class ScannerViewModel: ObservableObject {
         isScanning = true
         progress = 0
         results = []
+        catalogAudit = .empty
         errorMessage = nil
         scanFailureCount = 0
 
@@ -70,10 +72,11 @@ class ScannerViewModel: ObservableObject {
                 }
             )
 
-            let scanResults = self.scanner.scanProject(at: path, configuration: configuration)
+            let report = self.scanner.scanProjectReport(at: path, configuration: configuration)
 
             DispatchQueue.main.async {
-                self.results = scanResults
+                self.results = report.strings
+                self.catalogAudit = report.catalog
                 self.isScanning = false
             }
         }

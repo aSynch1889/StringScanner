@@ -7,6 +7,8 @@ struct CommandLineTool {
         var scanPath: String
         var stdoutOnly: Bool
         var outputFile: URL?
+        var fullReport: Bool
+        var enableCatalogAudit: Bool
     }
 
     static func main() {
@@ -19,14 +21,22 @@ struct CommandLineTool {
 
         let startTime = Date()
         let scanner = ProjectScanner()
-
-        let results = scanner.scanProject(at: options.scanPath, configuration: .cliDefault)
+        let configuration = ProjectScanConfiguration(
+            emitJSONToStandardOutput: false,
+            enableCatalogAudit: options.enableCatalogAudit
+        )
+        let report = scanner.scanProjectReport(at: options.scanPath, configuration: configuration)
 
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
 
         do {
-            let jsonData = try encoder.encode(results)
+            let jsonData: Data
+            if options.fullReport {
+                jsonData = try encoder.encode(report)
+            } else {
+                jsonData = try encoder.encode(report.strings)
+            }
 
             if options.stdoutOnly {
                 if let jsonString = String(data: jsonData, encoding: .utf8) {
@@ -56,12 +66,18 @@ struct CommandLineTool {
         var scanPath: String?
         var stdoutOnly = false
         var outputFile: URL?
+        var fullReport = false
+        var enableCatalogAudit = true
 
         while !args.isEmpty {
             let arg = args.removeFirst()
             switch arg {
             case "--stdout":
                 stdoutOnly = true
+            case "--full-report":
+                fullReport = true
+            case "--no-catalog":
+                enableCatalogAudit = false
             case "--output", "-o":
                 guard let path = args.first else {
                     print("Error: missing value for \(arg)", to: &stderr)
@@ -85,7 +101,9 @@ struct CommandLineTool {
         return Options(
             scanPath: scanPath ?? FileManager.default.currentDirectoryPath,
             stdoutOnly: stdoutOnly,
-            outputFile: outputFile
+            outputFile: outputFile,
+            fullReport: fullReport,
+            enableCatalogAudit: enableCatalogAudit
         )
     }
 
@@ -95,6 +113,8 @@ struct CommandLineTool {
 
         Options:
           --stdout          Print JSON to stdout (do not write a file)
+          --full-report     Include catalog audit alongside strings
+          --no-catalog      Skip .strings / .xcstrings cross-check
           -o, --output PATH Write JSON to PATH (default: ./string_scan_results.json)
           -h, --help        Show this help
         """)

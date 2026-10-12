@@ -88,6 +88,43 @@ final class StringScannerCoreTests: XCTestCase {
         XCTAssertTrue(results.contains { $0.content == "objc_localized" && $0.isLocalized })
     }
 
+    func testCatalogAuditMarksMissingAndUnusedKeys() throws {
+        try copyFixture("localization_sample.swift", into: tempRoot)
+        let en = tempRoot.appendingPathComponent("en.lproj", isDirectory: true)
+        let zh = tempRoot.appendingPathComponent("zh-Hans.lproj", isDirectory: true)
+        try FileManager.default.createDirectory(at: en, withIntermediateDirectories: true)
+        try FileManager.default.createDirectory(at: zh, withIntermediateDirectories: true)
+        try FileManager.default.copyItem(
+            at: fixturesURL(named: "en.lproj/Localizable.strings"),
+            to: en.appendingPathComponent("Localizable.strings")
+        )
+        try FileManager.default.copyItem(
+            at: fixturesURL(named: "zh-Hans.lproj/Localizable.strings"),
+            to: zh.appendingPathComponent("Localizable.strings")
+        )
+        try FileManager.default.copyItem(
+            at: fixturesURL(named: "Localizable.xcstrings"),
+            to: tempRoot.appendingPathComponent("Localizable.xcstrings")
+        )
+
+        let scanner = ProjectScanner()
+        let report = scanner.scanProjectReport(
+            at: tempRoot.path,
+            configuration: ProjectScanConfiguration(emitJSONToStandardOutput: false)
+        )
+
+        XCTAssertTrue(report.strings.contains {
+            $0.content == "key_ns" && $0.isLocalized && $0.catalogStatus == .present
+        })
+        XCTAssertTrue(report.strings.contains {
+            $0.content == "key_lsk" && $0.isLocalized && $0.catalogStatus == .missing
+        })
+        XCTAssertTrue(report.catalog.unusedInCatalog.contains("orphan_key"))
+        XCTAssertTrue(report.catalog.unusedInCatalog.contains("xc_only"))
+        XCTAssertTrue(report.catalog.missingFromCatalog.contains("key_lsk"))
+        XCTAssertFalse(report.catalog.incompleteLocalizations.isEmpty)
+    }
+
     func testResultsAreSortedByFileThenLine() throws {
         let sources = tempRoot.appendingPathComponent("Sources", isDirectory: true)
         try FileManager.default.createDirectory(at: sources, withIntermediateDirectories: true)

@@ -26,6 +26,7 @@ enum L10nKey {
     case exportCSV
     case stringsCount
     case localizedBadge
+    case catalogMissingBadge
     case appearance
     case appearanceSystem
     case appearanceLight
@@ -81,6 +82,7 @@ enum L10n {
         case .exportCSV: return "CSV"
         case .stringsCount: return "%@ of %@ strings"
         case .localizedBadge: return "LOCALIZED"
+        case .catalogMissingBadge: return "NOT IN CATALOG"
         case .appearance: return "Appearance"
         case .appearanceSystem: return "System"
         case .appearanceLight: return "Light"
@@ -123,6 +125,7 @@ enum L10n {
         case .exportCSV: return "CSV"
         case .stringsCount: return "%@ / %@ 条字符串"
         case .localizedBadge: return "已本地化"
+        case .catalogMissingBadge: return "目录缺失"
         case .appearance: return "外观"
         case .appearanceSystem: return "跟随系统"
         case .appearanceLight: return "浅色"

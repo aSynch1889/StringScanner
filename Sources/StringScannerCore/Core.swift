@@ -24,29 +24,61 @@ public struct StringLocation: Codable, Hashable {
     public let column: Int
     public let content: String
     public let isLocalized: Bool
-    
-    public init(file: String, line: Int, column: Int, content: String, isLocalized: Bool) {
+    public let catalogStatus: CatalogKeyStatus
+
+    public init(
+        file: String,
+        line: Int,
+        column: Int,
+        content: String,
+        isLocalized: Bool,
+        catalogStatus: CatalogKeyStatus = .notApplicable
+    ) {
         self.file = file
         self.line = line
         self.column = column
         self.content = content
         self.isLocalized = isLocalized
+        self.catalogStatus = catalogStatus
     }
-    
+
+    public func withCatalogStatus(_ status: CatalogKeyStatus) -> StringLocation {
+        StringLocation(
+            file: file,
+            line: line,
+            column: column,
+            content: content,
+            isLocalized: isLocalized,
+            catalogStatus: status
+        )
+    }
+
     public func hash(into hasher: inout Hasher) {
         hasher.combine(file)
         hasher.combine(line)
         hasher.combine(column)
         hasher.combine(content)
         hasher.combine(isLocalized)
+        hasher.combine(catalogStatus)
     }
-    
+
     public static func == (lhs: StringLocation, rhs: StringLocation) -> Bool {
-        return lhs.file == rhs.file &&
-               lhs.line == rhs.line &&
-               lhs.column == rhs.column &&
-               lhs.content == rhs.content &&
-               lhs.isLocalized == rhs.isLocalized
+        lhs.file == rhs.file &&
+            lhs.line == rhs.line &&
+            lhs.column == rhs.column &&
+            lhs.content == rhs.content &&
+            lhs.isLocalized == rhs.isLocalized &&
+            lhs.catalogStatus == rhs.catalogStatus
+    }
+}
+
+public struct ScanReport: Codable, Sendable {
+    public let strings: [StringLocation]
+    public let catalog: CatalogAudit
+
+    public init(strings: [StringLocation], catalog: CatalogAudit) {
+        self.strings = strings
+        self.catalog = catalog
     }
 }
 
@@ -55,30 +87,44 @@ public class ProjectScanner {
     private let resultsLock = NSLock()
     private let progressLock = NSLock()
     private var allStrings: [StringLocation] = []
-    
+    private var lastCatalogAudit: CatalogAudit = .empty
+
     public init() {}
-    
+
+    public func getCatalogAudit() -> CatalogAudit {
+        lastCatalogAudit
+    }
+
     @discardableResult
     public func scanProject(
         at path: String,
         configuration: ProjectScanConfiguration = ProjectScanConfiguration()
     ) -> [StringLocation] {
+        scanProjectReport(at: path, configuration: configuration).strings
+    }
+
+    @discardableResult
+    public func scanProjectReport(
+        at path: String,
+        configuration: ProjectScanConfiguration = ProjectScanConfiguration()
+    ) -> ScanReport {
         allStrings = []
+        lastCatalogAudit = .empty
         print("Scanning project at: \(path)", to: &stderr)
-        
+
         guard let files = SourceFileFilter.collectFiles(at: path, fileManager: fileManager) else {
             print("Error: Cannot enumerate directory contents", to: &stderr)
-            return []
+            return ScanReport(strings: [], catalog: .empty)
         }
-        
+
         let totalFiles = files.count
         if totalFiles == 0 {
             configuration.onNoScannableFiles?()
-            return []
+            return ScanReport(strings: [], catalog: .empty)
         }
-        
+
         var processedFiles = 0
-        
+
         DispatchQueue.concurrentPerform(iterations: totalFiles) { index in
             let file = files[index]
             do {
@@ -88,23 +134,45 @@ public class ProjectScanner {
                 print(message, to: &stderr)
                 configuration.onFileError?(message)
             }
-            
+
             self.progressLock.lock()
             processedFiles += 1
             let fraction = Double(processedFiles) / Double(totalFiles)
             self.progressLock.unlock()
             configuration.onProgress?(fraction)
         }
-        
+
+        var results = getScanResults()
+        if configuration.enableCatalogAudit {
+            let catalog = LocalizationCatalogLoader.load(from: path, fileManager: fileManager)
+            let referenced = Set(results.filter(\.isLocalized).map(\.content))
+            lastCatalogAudit = catalog.audit(againstLocalizedKeys: referenced)
+            let missing = Set(lastCatalogAudit.missingFromCatalog)
+            results = results.map { location in
+                guard location.isLocalized else {
+                    return location.withCatalogStatus(.notApplicable)
+                }
+                return location.withCatalogStatus(missing.contains(location.content) ? .missing : .present)
+            }
+            resultsLock.lock()
+            allStrings = results
+            resultsLock.unlock()
+
+            print(
+                "Catalog audit: \(lastCatalogAudit.keysInCatalog.count) keys, \(lastCatalogAudit.missingFromCatalog.count) missing, \(lastCatalogAudit.unusedInCatalog.count) unused, \(lastCatalogAudit.incompleteLocalizations.count) incomplete",
+                to: &stderr
+            )
+        }
+
         if configuration.emitJSONToStandardOutput {
             outputResults()
         }
-        
-        return getScanResults()
+
+        return ScanReport(strings: getScanResults(), catalog: lastCatalogAudit)
     }
-    
+
     public func getScanResults() -> [StringLocation] {
-        return allStrings.sorted {
+        allStrings.sorted {
             $0.file == $1.file ?
                 ($0.line == $1.line ? $0.column < $1.column : $0.line < $1.line) :
                 $0.file < $1.file

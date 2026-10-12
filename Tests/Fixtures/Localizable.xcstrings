@@ -1,0 +1,32 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "key_text" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Text"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "文本"
+          }
+        }
+      }
+    },
+    "xc_only" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "XC only"
+          }
+        }
+      }
+    }
+  },
+  "version" : "1.0"
+}
