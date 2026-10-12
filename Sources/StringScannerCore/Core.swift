@@ -25,6 +25,7 @@ public struct StringLocation: Codable, Hashable, Sendable {
     public let content: String
     public let isLocalized: Bool
     public let catalogStatus: CatalogKeyStatus
+    public let kind: StringKind
 
     public init(
         file: String,
@@ -32,7 +33,8 @@ public struct StringLocation: Codable, Hashable, Sendable {
         column: Int,
         content: String,
         isLocalized: Bool,
-        catalogStatus: CatalogKeyStatus = .notApplicable
+        catalogStatus: CatalogKeyStatus = .notApplicable,
+        kind: StringKind = .copy
     ) {
         self.file = file
         self.line = line
@@ -40,6 +42,7 @@ public struct StringLocation: Codable, Hashable, Sendable {
         self.content = content
         self.isLocalized = isLocalized
         self.catalogStatus = catalogStatus
+        self.kind = kind
     }
 
     public func withCatalogStatus(_ status: CatalogKeyStatus) -> StringLocation {
@@ -49,7 +52,8 @@ public struct StringLocation: Codable, Hashable, Sendable {
             column: column,
             content: content,
             isLocalized: isLocalized,
-            catalogStatus: status
+            catalogStatus: status,
+            kind: kind
         )
     }
 
@@ -60,6 +64,7 @@ public struct StringLocation: Codable, Hashable, Sendable {
         hasher.combine(content)
         hasher.combine(isLocalized)
         hasher.combine(catalogStatus)
+        hasher.combine(kind)
     }
 
     public static func == (lhs: StringLocation, rhs: StringLocation) -> Bool {
@@ -68,7 +73,8 @@ public struct StringLocation: Codable, Hashable, Sendable {
             lhs.column == rhs.column &&
             lhs.content == rhs.content &&
             lhs.isLocalized == rhs.isLocalized &&
-            lhs.catalogStatus == rhs.catalogStatus
+            lhs.catalogStatus == rhs.catalogStatus &&
+            lhs.kind == rhs.kind
     }
 }
 
@@ -145,6 +151,11 @@ public class ProjectScanner {
         }
 
         var results = getScanResults()
+        let included = configuration.includedStringKinds
+        if included != Set(StringKind.allCases) {
+            results = results.filter { included.contains($0.kind) }
+        }
+
         if configuration.enableCatalogAudit {
             let catalog = LocalizationCatalogLoader.load(from: path, fileManager: fileManager)
             let referenced = Set(results.filter(\.isLocalized).map(\.content))
@@ -156,15 +167,16 @@ public class ProjectScanner {
                 }
                 return location.withCatalogStatus(missing.contains(location.content) ? .missing : .present)
             }
-            resultsLock.lock()
-            allStrings = results
-            resultsLock.unlock()
 
             print(
                 "Catalog audit: \(lastCatalogAudit.keysInCatalog.count) keys, \(lastCatalogAudit.missingFromCatalog.count) missing, \(lastCatalogAudit.unusedInCatalog.count) unused, \(lastCatalogAudit.incompleteLocalizations.count) incomplete",
                 to: &stderr
             )
         }
+
+        resultsLock.lock()
+        allStrings = results
+        resultsLock.unlock()
 
         if configuration.emitJSONToStandardOutput {
             outputResults()
@@ -275,13 +287,18 @@ public class StringVisitor: SyntaxVisitor {
             .joined()
 
         let isLocalized = isInLocalizationContext(node)
+        let kind = StringKindClassifier.classify(
+            content: content,
+            context: StringKindClassifier.context(for: node)
+        )
 
         strings.append(StringLocation(
             file: filePath,
             line: location.line,
             column: location.column,
             content: content,
-            isLocalized: isLocalized
+            isLocalized: isLocalized,
+            kind: kind
         ))
 
         return .skipChildren

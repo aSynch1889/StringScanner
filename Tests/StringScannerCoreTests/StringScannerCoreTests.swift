@@ -88,6 +88,37 @@ final class StringScannerCoreTests: XCTestCase {
         XCTAssertTrue(results.contains { $0.content == "objc_localized" && $0.isLocalized })
     }
 
+    func testClassifiesAndFiltersNonCopyKindsByDefault() throws {
+        try copyFixture("kind_sample.swift", into: tempRoot)
+
+        let scanner = ProjectScanner()
+        let filtered = scanner.scanProject(
+            at: tempRoot.path,
+            configuration: ProjectScanConfiguration(
+                emitJSONToStandardOutput: false,
+                enableCatalogAudit: false
+            )
+        )
+        XCTAssertTrue(filtered.contains { $0.content == "Welcome back" && $0.kind == .copy })
+        XCTAssertTrue(filtered.contains { $0.content == "Hello, %@" && $0.kind == .format })
+        XCTAssertFalse(filtered.contains { $0.content == "https://example.com/api" })
+        XCTAssertFalse(filtered.contains { $0.content == "debug dump" })
+        XCTAssertFalse(filtered.contains { $0.content == "chevron.right" })
+
+        let all = scanner.scanProject(
+            at: tempRoot.path,
+            configuration: ProjectScanConfiguration(
+                emitJSONToStandardOutput: false,
+                enableCatalogAudit: false,
+                includedStringKinds: Set(StringKind.allCases)
+            )
+        )
+        XCTAssertTrue(all.contains { $0.content == "https://example.com/api" && $0.kind == .url })
+        XCTAssertTrue(all.contains { $0.content == "debug dump" && $0.kind == .log })
+        XCTAssertTrue(all.contains { $0.content == "chevron.right" && $0.kind == .sfSymbol })
+        XCTAssertTrue(all.contains { $0.content == "com.example.app.module" && $0.kind == .technical })
+    }
+
     func testCustomLocalizationWrappersAreDetected() throws {
         try copyFixture("custom_localize.swift", into: tempRoot)
 

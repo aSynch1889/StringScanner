@@ -38,13 +38,19 @@ enum ObjCSourceScanner {
                 with: NSRange(location: max(0, fullMatchRange.location - 80), length: min(80, fullMatchRange.location))
             )
             let isLocalized = markers.contains { localizedContext.contains($0) }
+            let context = StringClassificationContext(
+                isLogCall: localizedContext.contains("NSLog") || localizedContext.contains("os_log"),
+                isSystemImage: false
+            )
+            let kind = StringKindClassifier.classify(content: content, context: context)
 
             results.append(StringLocation(
                 file: filePath,
                 line: line,
                 column: column + 1,
                 content: content,
-                isLocalized: isLocalized
+                isLocalized: isLocalized,
+                kind: kind
             ))
         }
 

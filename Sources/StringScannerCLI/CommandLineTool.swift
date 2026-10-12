@@ -10,6 +10,7 @@ struct CommandLineTool {
         var fullReport: Bool
         var enableCatalogAudit: Bool
         var localizationFunctions: [LocalizationFunctionSpec]
+        var includedStringKinds: Set<StringKind>
     }
 
     static func main() {
@@ -25,7 +26,8 @@ struct CommandLineTool {
         let configuration = ProjectScanConfiguration(
             emitJSONToStandardOutput: false,
             enableCatalogAudit: options.enableCatalogAudit,
-            localizationFunctions: options.localizationFunctions
+            localizationFunctions: options.localizationFunctions,
+            includedStringKinds: options.includedStringKinds
         )
         let report = scanner.scanProjectReport(at: options.scanPath, configuration: configuration)
 
@@ -71,6 +73,7 @@ struct CommandLineTool {
         var fullReport = false
         var enableCatalogAudit = true
         var localizationFunctions: [LocalizationFunctionSpec] = []
+        var includedStringKinds = StringKind.defaultIncluded
 
         while !args.isEmpty {
             let arg = args.removeFirst()
@@ -88,6 +91,17 @@ struct CommandLineTool {
                 }
                 args.removeFirst()
                 localizationFunctions.append(contentsOf: LocalizationFunctionMatcher.parseList(value))
+            case "--include-kinds":
+                guard let value = args.first else {
+                    print("Error: missing value for \(arg)", to: &stderr)
+                    exit(1)
+                }
+                args.removeFirst()
+                includedStringKinds = StringKind.parseList(value)
+                if includedStringKinds.isEmpty {
+                    print("Error: no valid kinds in --include-kinds", to: &stderr)
+                    exit(1)
+                }
             case "--output", "-o":
                 guard let path = args.first else {
                     print("Error: missing value for \(arg)", to: &stderr)
@@ -114,7 +128,8 @@ struct CommandLineTool {
             outputFile: outputFile,
             fullReport: fullReport,
             enableCatalogAudit: enableCatalogAudit,
-            localizationFunctions: localizationFunctions
+            localizationFunctions: localizationFunctions,
+            includedStringKinds: includedStringKinds
         )
     }
 
@@ -127,6 +142,8 @@ struct CommandLineTool {
           --full-report     Include catalog audit alongside strings
           --no-catalog      Skip .strings / .xcstrings cross-check
           --localize-func   Comma-separated wrappers, e.g. L10n.t,tr
+          --include-kinds   copy,format,url,log,sfSymbol,technical or all
+                            (default: copy,format)
           -o, --output PATH Write JSON to PATH (default: ./string_scan_results.json)
           -h, --help        Show this help
         """)
