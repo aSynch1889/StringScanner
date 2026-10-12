@@ -14,7 +14,8 @@ class ScannerViewModel: ObservableObject {
     
     private let scanner = ProjectScanner()
     private let fileManager = FileManager.default
-    private let queue = DispatchQueue(label: "result.queue", attributes: .concurrent)
+    private let resultsLock = NSLock()
+    private let progressLock = NSLock()
     private var allStrings: [StringLocation] = []
     
     func selectFolder() {
@@ -63,6 +64,15 @@ class ScannerViewModel: ObservableObject {
             .filter { isValidFile($0) }
         
         let totalFiles = files.count
+        if totalFiles == 0 {
+            DispatchQueue.main.async {
+                self.errorMessage = "No scannable .swift, .m, or .h files found in the selected folder"
+                self.progress = 0
+                self.isScanning = false
+            }
+            return
+        }
+        
         var processedFiles = 0
         
         DispatchQueue.concurrentPerform(iterations: files.count) { index in
@@ -75,9 +85,13 @@ class ScannerViewModel: ObservableObject {
                 }
             }
             
+            self.progressLock.lock()
             processedFiles += 1
+            let fraction = Double(processedFiles) / Double(totalFiles)
+            self.progressLock.unlock()
+            
             DispatchQueue.main.async {
-                self.progress = Double(processedFiles) / Double(totalFiles)
+                self.progress = fraction
             }
         }
         
@@ -120,9 +134,9 @@ class ScannerViewModel: ObservableObject {
         
         visitor.walk(foldedFile)
         
-        queue.async(flags: .barrier) {
-            self.allStrings.append(contentsOf: visitor.strings)
-        }
+        resultsLock.lock()
+        allStrings.append(contentsOf: visitor.strings)
+        resultsLock.unlock()
     }
     
     private func outputResults() {

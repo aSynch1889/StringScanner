@@ -52,7 +52,7 @@ public struct StringLocation: Codable, Hashable {
 
 public class ProjectScanner {
     private let fileManager = FileManager.default
-    private let queue = DispatchQueue(label: "result.queue", attributes: .concurrent)
+    private let resultsLock = NSLock()
     private var allStrings: [StringLocation] = []
     
     public init() {}
@@ -125,9 +125,9 @@ public class ProjectScanner {
         
         visitor.walk(foldedFile)
         
-        queue.async(flags: .barrier) {
-            self.allStrings.append(contentsOf: visitor.strings)
-        }
+        resultsLock.lock()
+        allStrings.append(contentsOf: visitor.strings)
+        resultsLock.unlock()
     }
     
     private func outputResults() {
