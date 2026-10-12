@@ -88,6 +88,38 @@ final class StringScannerCoreTests: XCTestCase {
         XCTAssertTrue(results.contains { $0.content == "objc_localized" && $0.isLocalized })
     }
 
+    func testExportsXCStringsAndStringsFiles() throws {
+        try copyFixture("simple.swift", into: tempRoot)
+        try """
+        func more() {
+            _ = "Welcome back"
+            _ = NSLocalizedString("already", comment: "")
+        }
+        """.write(to: tempRoot.appendingPathComponent("more.swift"), atomically: true, encoding: .utf8)
+
+        let scanner = ProjectScanner()
+        let results = scanner.scanProject(
+            at: tempRoot.path,
+            configuration: ProjectScanConfiguration(
+                emitJSONToStandardOutput: false,
+                enableCatalogAudit: false
+            )
+        )
+
+        let stringsBody = LocalizationFileExporter.makeStringsFile(from: results)
+        XCTAssertTrue(stringsBody.contains("\"Hello\""))
+        XCTAssertTrue(stringsBody.contains("\"Welcome back\""))
+        XCTAssertFalse(stringsBody.contains("\"already\""))
+
+        let data = try LocalizationFileExporter.makeXCStringsData(from: results)
+        let json = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
+        let strings = try XCTUnwrap(json["strings"] as? [String: Any])
+        XCTAssertNotNil(strings["Hello"])
+        XCTAssertNotNil(strings["Welcome back"])
+        XCTAssertNil(strings["already"])
+        XCTAssertEqual(json["sourceLanguage"] as? String, "en")
+    }
+
     func testReportsParseIssuesForBrokenSwiftFiles() throws {
         try copyFixture("broken.swift", into: tempRoot)
         try copyFixture("simple.swift", into: tempRoot)

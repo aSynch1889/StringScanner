@@ -24,6 +24,11 @@ enum L10nKey {
     case filterPlain
     case exportJSON
     case exportCSV
+    case exportMenu
+    case exportXCStrings
+    case exportStrings
+    case failedExportXCStrings
+    case failedExportStrings
     case stringsCount
     case localizedBadge
     case catalogMissingBadge
@@ -93,6 +98,11 @@ enum L10n {
         case .filterPlain: return "Plain"
         case .exportJSON: return "JSON"
         case .exportCSV: return "CSV"
+        case .exportMenu: return "Export"
+        case .exportXCStrings: return "String Catalog (.xcstrings)"
+        case .exportStrings: return "Strings (.strings)"
+        case .failedExportXCStrings: return "Failed to export .xcstrings: %@"
+        case .failedExportStrings: return "Failed to export .strings: %@"
         case .stringsCount: return "%@ of %@ strings"
         case .localizedBadge: return "LOCALIZED"
         case .catalogMissingBadge: return "NOT IN CATALOG"
@@ -149,6 +159,11 @@ enum L10n {
         case .filterPlain: return "普通"
         case .exportJSON: return "JSON"
         case .exportCSV: return "CSV"
+        case .exportMenu: return "导出"
+        case .exportXCStrings: return "String Catalog（.xcstrings）"
+        case .exportStrings: return "Strings（.strings）"
+        case .failedExportXCStrings: return "导出 .xcstrings 失败：%@"
+        case .failedExportStrings: return "导出 .strings 失败：%@"
         case .stringsCount: return "%@ / %@ 条字符串"
         case .localizedBadge: return "已本地化"
         case .catalogMissingBadge: return "目录缺失"

@@ -404,17 +404,17 @@ struct ResultsView: View {
             }
 
             ToolbarItemGroup(placement: .primaryAction) {
-                Button(action: viewModel.exportToJSON) {
-                    Label(L10n.t(.exportJSON), systemImage: "square.and.arrow.down")
+                Menu {
+                    Button(L10n.t(.exportXCStrings), action: viewModel.exportToXCStrings)
+                    Button(L10n.t(.exportStrings), action: viewModel.exportToStrings)
+                    Divider()
+                    Button(L10n.t(.exportJSON), action: viewModel.exportToJSON)
+                    Button(L10n.t(.exportCSV), action: viewModel.exportToCSV)
+                } label: {
+                    Label(L10n.t(.exportMenu), systemImage: "square.and.arrow.up")
                 }
                 .disabled(viewModel.results.isEmpty)
-                .help(L10n.t(.exportJSON))
-
-                Button(action: viewModel.exportToCSV) {
-                    Label(L10n.t(.exportCSV), systemImage: "tablecells")
-                }
-                .disabled(viewModel.results.isEmpty)
-                .help(L10n.t(.exportCSV))
+                .help(L10n.t(.exportMenu))
             }
         }
         .toolbarBackground(AppTheme.windowBackground, for: .windowToolbar)

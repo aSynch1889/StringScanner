@@ -49,6 +49,11 @@ swift build
 
 # 自定义本地化包装、放宽字符串分类过滤
 .build/debug/stringscanner-cli /path/to/project --localize-func L10n.t,tr --include-kinds all
+
+# 导出可放入 Xcode 工程的本地化文件（默认仅未本地化文案）
+.build/debug/stringscanner-cli /path/to/project \
+  --export-xcstrings ./Localizable.xcstrings \
+  --export-strings ./en.lproj/Localizable.strings
 ```
 
 ### 图形界面（GUI）

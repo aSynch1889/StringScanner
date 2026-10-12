@@ -11,6 +11,9 @@ struct CommandLineTool {
         var enableCatalogAudit: Bool
         var localizationFunctions: [LocalizationFunctionSpec]
         var includedStringKinds: Set<StringKind>
+        var xcstringsOutput: URL?
+        var stringsOutput: URL?
+        var localizationExportScope: LocalizationExportScope
     }
 
     static func main() {
@@ -46,15 +49,40 @@ struct CommandLineTool {
                 if let jsonString = String(data: jsonData, encoding: .utf8) {
                     print(jsonString)
                 }
-            } else {
+            } else if options.xcstringsOutput == nil && options.stringsOutput == nil {
                 let destination = options.outputFile
                     ?? URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
                     .appendingPathComponent("string_scan_results.json")
                 try jsonData.write(to: destination)
                 print("Results saved to: \(destination.path)", to: &stderr)
+            } else if let jsonOut = options.outputFile {
+                try jsonData.write(to: jsonOut)
+                print("Results saved to: \(jsonOut.path)", to: &stderr)
             }
         } catch {
             print("Error writing results: \(error)", to: &stderr)
+            exit(1)
+        }
+
+        do {
+            if let xcURL = options.xcstringsOutput {
+                let data = try LocalizationFileExporter.makeXCStringsData(
+                    from: report.strings,
+                    scope: options.localizationExportScope
+                )
+                try data.write(to: xcURL, options: .atomic)
+                print("String Catalog saved to: \(xcURL.path)", to: &stderr)
+            }
+            if let stringsURL = options.stringsOutput {
+                let body = LocalizationFileExporter.makeStringsFile(
+                    from: report.strings,
+                    scope: options.localizationExportScope
+                )
+                try body.write(to: stringsURL, atomically: true, encoding: .utf8)
+                print("Strings file saved to: \(stringsURL.path)", to: &stderr)
+            }
+        } catch {
+            print("Error writing localization export: \(error)", to: &stderr)
             exit(1)
         }
 
@@ -74,6 +102,9 @@ struct CommandLineTool {
         var enableCatalogAudit = true
         var localizationFunctions: [LocalizationFunctionSpec] = []
         var includedStringKinds = StringKind.defaultIncluded
+        var xcstringsOutput: URL?
+        var stringsOutput: URL?
+        var localizationExportScope: LocalizationExportScope = .unlocalizedOnly
 
         while !args.isEmpty {
             let arg = args.removeFirst()
@@ -102,6 +133,31 @@ struct CommandLineTool {
                     print("Error: no valid kinds in --include-kinds", to: &stderr)
                     exit(1)
                 }
+            case "--export-xcstrings":
+                guard let path = args.first else {
+                    print("Error: missing value for \(arg)", to: &stderr)
+                    exit(1)
+                }
+                args.removeFirst()
+                xcstringsOutput = URL(fileURLWithPath: path)
+            case "--export-strings":
+                guard let path = args.first else {
+                    print("Error: missing value for \(arg)", to: &stderr)
+                    exit(1)
+                }
+                args.removeFirst()
+                stringsOutput = URL(fileURLWithPath: path)
+            case "--export-scope":
+                guard let value = args.first else {
+                    print("Error: missing value for \(arg)", to: &stderr)
+                    exit(1)
+                }
+                args.removeFirst()
+                guard let scope = LocalizationExportScope(rawValue: value) else {
+                    print("Error: invalid --export-scope \(value)", to: &stderr)
+                    exit(1)
+                }
+                localizationExportScope = scope
             case "--output", "-o":
                 guard let path = args.first else {
                     print("Error: missing value for \(arg)", to: &stderr)
@@ -129,7 +185,10 @@ struct CommandLineTool {
             fullReport: fullReport,
             enableCatalogAudit: enableCatalogAudit,
             localizationFunctions: localizationFunctions,
-            includedStringKinds: includedStringKinds
+            includedStringKinds: includedStringKinds,
+            xcstringsOutput: xcstringsOutput,
+            stringsOutput: stringsOutput,
+            localizationExportScope: localizationExportScope
         )
     }
 
@@ -144,7 +203,12 @@ struct CommandLineTool {
           --localize-func   Comma-separated wrappers, e.g. L10n.t,tr
           --include-kinds   copy,format,url,log,sfSymbol,technical or all
                             (default: copy,format)
-          -o, --output PATH Write JSON to PATH (default: ./string_scan_results.json)
+          --export-xcstrings PATH  Write Xcode String Catalog (.xcstrings)
+          --export-strings PATH    Write Localizable.strings
+          --export-scope SCOPE     unlocalizedOnly | all | localizedOnly
+                                   (default: unlocalizedOnly)
+          -o, --output PATH Write JSON to PATH (default: ./string_scan_results.json
+                            unless only localization exports are requested)
           -h, --help        Show this help
         """)
     }

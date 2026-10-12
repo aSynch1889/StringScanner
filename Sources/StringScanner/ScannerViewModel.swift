@@ -1,5 +1,6 @@
 import Foundation
 import SwiftUI
+import UniformTypeIdentifiers
 import StringScannerCore
 
 class ScannerViewModel: ObservableObject {
@@ -139,6 +140,54 @@ class ScannerViewModel: ObservableObject {
                 try csvString.write(to: url, atomically: true, encoding: .utf8)
             } catch {
                 errorMessage = L10n.format(.failedExportCSV, error.localizedDescription)
+            }
+        }
+    }
+
+    /// Exports an Xcode String Catalog (`.xcstrings`) from unlocalized copy/format strings.
+    func exportToXCStrings() {
+        guard !results.isEmpty else {
+            errorMessage = L10n.t(.noResultsToExport)
+            return
+        }
+
+        let savePanel = NSSavePanel()
+        savePanel.nameFieldStringValue = "Localizable.xcstrings"
+        savePanel.allowedContentTypes = [
+            UTType(filenameExtension: "xcstrings") ?? .json
+        ]
+
+        if savePanel.runModal() == .OK {
+            guard let url = savePanel.url else { return }
+            do {
+                let data = try LocalizationFileExporter.makeXCStringsData(from: results)
+                try data.write(to: url, options: .atomic)
+            } catch {
+                errorMessage = L10n.format(.failedExportXCStrings, error.localizedDescription)
+            }
+        }
+    }
+
+    /// Exports a classic `Localizable.strings` file from unlocalized copy/format strings.
+    func exportToStrings() {
+        guard !results.isEmpty else {
+            errorMessage = L10n.t(.noResultsToExport)
+            return
+        }
+
+        let savePanel = NSSavePanel()
+        savePanel.nameFieldStringValue = "Localizable.strings"
+        savePanel.allowedContentTypes = [
+            UTType(filenameExtension: "strings") ?? .plainText
+        ]
+
+        if savePanel.runModal() == .OK {
+            guard let url = savePanel.url else { return }
+            do {
+                let body = LocalizationFileExporter.makeStringsFile(from: results)
+                try body.write(to: url, atomically: true, encoding: .utf8)
+            } catch {
+                errorMessage = L10n.format(.failedExportStrings, error.localizedDescription)
             }
         }
     }
