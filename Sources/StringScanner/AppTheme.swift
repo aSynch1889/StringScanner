@@ -43,20 +43,20 @@ enum AppTheme {
         #endif
     }
 
+    /// Supporting copy — keep enough contrast on light backgrounds.
     static var secondaryText: Color {
-        #if canImport(AppKit)
-        Color(nsColor: .secondaryLabelColor)
-        #else
-        Color.secondary
-        #endif
+        Color(
+            light: Color(red: 0.28, green: 0.33, blue: 0.32),
+            dark: Color(white: 0.78)
+        )
     }
 
+    /// Captions / section labels — darker than system tertiaryLabel in light mode.
     static var tertiaryText: Color {
-        #if canImport(AppKit)
-        Color(nsColor: .tertiaryLabelColor)
-        #else
-        Color.secondary.opacity(0.7)
-        #endif
+        Color(
+            light: Color(red: 0.40, green: 0.45, blue: 0.44),
+            dark: Color(white: 0.62)
+        )
     }
 
     static var separator: Color {

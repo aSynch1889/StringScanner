@@ -47,12 +47,11 @@ struct ContentView: View {
 struct SidebarView: View {
     @ObservedObject var viewModel: ScannerViewModel
     @EnvironmentObject private var settings: AppSettings
-    @State private var updateMessage: String?
-    @State private var updateURL: URL?
-    @State private var isCheckingUpdate = false
+    @EnvironmentObject private var updateStatus: UpdateStatus
 
     private var hasFolder: Bool { !viewModel.selectedPath.isEmpty }
     private var canScan: Bool { hasFolder && !viewModel.isScanning }
+    private var canExport: Bool { !viewModel.results.isEmpty }
 
     private var localizedCount: Int {
         viewModel.results.filter(\.isLocalized).count
@@ -166,7 +165,7 @@ struct SidebarView: View {
                 if viewModel.isScanning {
                     ProgressView()
                         .controlSize(.small)
-                        .tint(canScan || viewModel.isScanning ? .white : AppTheme.tertiaryText)
+                        .tint(canScan || viewModel.isScanning ? .white : AppTheme.secondaryText)
                 } else {
                     Image(systemName: "waveform.and.magnifyingglass")
                 }
@@ -178,7 +177,7 @@ struct SidebarView: View {
                         .font(.system(size: 12, weight: .bold))
                 }
             }
-            .foregroundStyle(canScan || viewModel.isScanning ? .white : AppTheme.tertiaryText)
+            .foregroundStyle(canScan || viewModel.isScanning ? .white : AppTheme.secondaryText)
             .padding(.horizontal, 14)
             .padding(.vertical, 12)
             .background(
@@ -193,7 +192,7 @@ struct SidebarView: View {
         }
         .buttonStyle(.plain)
         .disabled(!canScan && !viewModel.isScanning)
-        .opacity(hasFolder || viewModel.isScanning ? 1 : 0.7)
+        .opacity(hasFolder || viewModel.isScanning ? 1 : 0.88)
     }
 
     private var scanButtonFill: Color {
@@ -217,31 +216,37 @@ struct SidebarView: View {
             Divider().overlay(AppTheme.separator)
 
             VStack(alignment: .leading, spacing: 8) {
-                sectionLabel(L10n.t(.appearance))
-                Picker("", selection: Binding(
-                    get: { settings.appearance },
-                    set: { settings.appearance = $0 }
-                )) {
-                    ForEach(AppAppearance.allCases) { mode in
-                        Text(mode.title(language: settings.language)).tag(mode)
+                sectionLabel(L10n.t(.exportMenu))
+                Menu {
+                    Button(L10n.t(.exportXCStrings), action: viewModel.exportToXCStrings)
+                    Button(L10n.t(.exportStrings), action: viewModel.exportToStrings)
+                    Divider()
+                    Button(L10n.t(.exportJSON), action: viewModel.exportToJSON)
+                    Button(L10n.t(.exportCSV), action: viewModel.exportToCSV)
+                } label: {
+                    HStack(spacing: 8) {
+                        Image(systemName: "square.and.arrow.up")
+                        Text(L10n.t(.exportMenu))
+                            .font(.system(size: 13, weight: .semibold))
+                        Spacer(minLength: 0)
+                        Image(systemName: "chevron.up.chevron.down")
+                            .font(.system(size: 10, weight: .semibold))
+                            .foregroundStyle(AppTheme.tertiaryText)
                     }
+                    .foregroundStyle(canExport ? AppTheme.primaryText : AppTheme.secondaryText)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 10)
+                    .background(
+                        RoundedRectangle(cornerRadius: 10, style: .continuous)
+                            .fill(AppTheme.panelFill)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                    .strokeBorder(AppTheme.panelStroke, lineWidth: 1)
+                            )
+                    )
                 }
-                .pickerStyle(.segmented)
-                .labelsHidden()
-            }
-
-            VStack(alignment: .leading, spacing: 8) {
-                sectionLabel(L10n.t(.language))
-                Picker("", selection: Binding(
-                    get: { settings.language },
-                    set: { settings.language = $0 }
-                )) {
-                    ForEach(AppLanguage.allCases) { language in
-                        Text(language.displayName).tag(language)
-                    }
-                }
-                .pickerStyle(.segmented)
-                .labelsHidden()
+                .disabled(!canExport)
+                .buttonStyle(.plain)
             }
 
             VStack(alignment: .leading, spacing: 8) {
@@ -257,54 +262,30 @@ struct SidebarView: View {
                     .foregroundStyle(AppTheme.tertiaryText)
             }
 
-            VStack(alignment: .leading, spacing: 8) {
+            VStack(alignment: .leading, spacing: 6) {
                 sectionLabel(L10n.t(.updates))
-                Text(L10n.format(.versionLabel, AppVersion.current))
-                    .font(AppTheme.monoCaption)
-                    .foregroundStyle(AppTheme.secondaryText)
-                Button {
-                    Task { await checkForUpdates() }
-                } label: {
-                    HStack {
-                        if isCheckingUpdate {
-                            ProgressView().controlSize(.small)
+                HStack(spacing: 8) {
+                    Text(L10n.format(.versionLabel, AppVersion.current))
+                        .font(AppTheme.monoCaption)
+                        .foregroundStyle(AppTheme.secondaryText)
+
+                    if updateStatus.hasUpdate {
+                        Link(destination: updateStatus.releaseURL) {
+                            Text(L10n.t(.updateBadge))
+                                .font(.system(size: 10, weight: .bold, design: .rounded))
+                                .tracking(0.3)
+                                .foregroundStyle(.white)
+                                .padding(.horizontal, 7)
+                                .padding(.vertical, 3)
+                                .background(
+                                    Capsule(style: .continuous)
+                                        .fill(AppTheme.teal)
+                                )
                         }
-                        Text(L10n.t(.checkForUpdates))
+                        .help(L10n.t(.updateAvailableHint))
                     }
                 }
-                .buttonStyle(.bordered)
-                .disabled(isCheckingUpdate)
-
-                if let updateMessage {
-                    Text(updateMessage)
-                        .font(.system(size: 11))
-                        .foregroundStyle(AppTheme.secondaryText)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-                if let updateURL {
-                    Link(L10n.t(.openReleasePage), destination: updateURL)
-                        .font(.system(size: 12, weight: .semibold))
-                }
             }
-        }
-    }
-
-    @MainActor
-    private func checkForUpdates() async {
-        isCheckingUpdate = true
-        updateMessage = nil
-        updateURL = nil
-        defer { isCheckingUpdate = false }
-
-        switch await UpdateChecker.check() {
-        case .upToDate(let current):
-            updateMessage = L10n.format(.upToDate, current)
-        case .available(let release):
-            updateMessage = L10n.format(.updateAvailable, release.tagName)
-            updateURL = release.htmlURL
-        case .failed(let message):
-            updateMessage = message
-            updateURL = AppVersion.releasesPage
         }
     }
 
@@ -312,7 +293,7 @@ struct SidebarView: View {
         Text(text)
             .font(.system(size: 11, weight: .semibold, design: .rounded))
             .tracking(1.0)
-            .foregroundStyle(AppTheme.tertiaryText)
+            .foregroundStyle(AppTheme.secondaryText)
     }
 
     private func statChip(title: String, value: String) -> some View {
@@ -398,23 +379,51 @@ struct ResultsView: View {
                     }
                 }
                 .pickerStyle(.segmented)
-                .frame(minWidth: 220, idealWidth: 260)
+                .frame(minWidth: 200, idealWidth: 240)
                 .labelsHidden()
                 .disabled(viewModel.results.isEmpty)
             }
 
             ToolbarItemGroup(placement: .primaryAction) {
                 Menu {
-                    Button(L10n.t(.exportXCStrings), action: viewModel.exportToXCStrings)
-                    Button(L10n.t(.exportStrings), action: viewModel.exportToStrings)
-                    Divider()
-                    Button(L10n.t(.exportJSON), action: viewModel.exportToJSON)
-                    Button(L10n.t(.exportCSV), action: viewModel.exportToCSV)
+                    ForEach(AppAppearance.allCases) { mode in
+                        Button {
+                            settings.appearance = mode
+                        } label: {
+                            if settings.appearance == mode {
+                                Label(
+                                    mode.title(language: settings.language),
+                                    systemImage: "checkmark"
+                                )
+                            } else {
+                                Text(mode.title(language: settings.language))
+                            }
+                        }
+                    }
                 } label: {
-                    Label(L10n.t(.exportMenu), systemImage: "square.and.arrow.up")
+                    Label(
+                        settings.appearance.title(language: settings.language),
+                        systemImage: "circle.lefthalf.filled"
+                    )
                 }
-                .disabled(viewModel.results.isEmpty)
-                .help(L10n.t(.exportMenu))
+                .help(L10n.t(.appearance))
+
+                Menu {
+                    ForEach(AppLanguage.allCases) { language in
+                        Button {
+                            settings.language = language
+                        } label: {
+                            if settings.language == language {
+                                Label(language.displayName, systemImage: "checkmark")
+                            } else {
+                                Text(language.displayName)
+                            }
+                        }
+                    }
+                } label: {
+                    Label(settings.language.displayName, systemImage: "globe")
+                }
+                .help(L10n.t(.language))
             }
         }
         .toolbarBackground(AppTheme.windowBackground, for: .windowToolbar)
@@ -615,5 +624,6 @@ struct ResultsView: View {
 #Preview {
     ContentView()
         .environmentObject(AppSettings())
+        .environmentObject(UpdateStatus())
         .frame(width: 980, height: 640)
 }

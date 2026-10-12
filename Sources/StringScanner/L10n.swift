@@ -52,6 +52,8 @@ enum L10nKey {
     case checkForUpdates
     case upToDate
     case updateAvailable
+    case updateBadge
+    case updateAvailableHint
     case openReleasePage
     case copyKey
     case openInXcode
@@ -126,6 +128,8 @@ enum L10n {
         case .checkForUpdates: return "Check for Updates"
         case .upToDate: return "You're on the latest version (%@)."
         case .updateAvailable: return "Update available: %@"
+        case .updateBadge: return "UPDATE"
+        case .updateAvailableHint: return "A newer version is available — click to open the release page"
         case .openReleasePage: return "Open release page"
         case .copyKey: return "Copy string"
         case .openInXcode: return "Open in Xcode"
@@ -187,6 +191,8 @@ enum L10n {
         case .checkForUpdates: return "检查更新"
         case .upToDate: return "已是最新版本（%@）。"
         case .updateAvailable: return "发现新版本：%@"
+        case .updateBadge: return "有更新"
+        case .updateAvailableHint: return "发现新版本，点击打开发布页"
         case .openReleasePage: return "打开发布页"
         case .copyKey: return "复制字符串"
         case .openInXcode: return "在 Xcode 中打开"
