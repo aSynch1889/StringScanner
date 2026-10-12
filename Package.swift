@@ -33,6 +33,10 @@ let package = Package(
                 .product(name: "SwiftParser", package: "swift-syntax"),
                 .product(name: "SwiftOperators", package: "swift-syntax")
             ]
+        ),
+        .testTarget(
+            name: "StringScannerCoreTests",
+            dependencies: ["StringScannerCore"]
         )
     ]
 )
