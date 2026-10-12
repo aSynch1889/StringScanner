@@ -8,7 +8,7 @@ struct CommandLineTool {
         let scanner = ProjectScanner()
         
         let path = CommandLine.arguments.dropFirst().first ?? FileManager.default.currentDirectoryPath
-        scanner.scanProject(at: path)
+        scanner.scanProject(at: path, configuration: .cliDefault)
         
         let elapsedTime = Date().timeIntervalSince(startTime)
         // print("\nScan completed in \(String(format: "%.2f", elapsedTime)) seconds", to: &stderr)

@@ -53,35 +53,54 @@ public struct StringLocation: Codable, Hashable {
 public class ProjectScanner {
     private let fileManager = FileManager.default
     private let resultsLock = NSLock()
+    private let progressLock = NSLock()
     private var allStrings: [StringLocation] = []
     
     public init() {}
     
-    public func scanProject(at path: String) {
+    @discardableResult
+    public func scanProject(
+        at path: String,
+        configuration: ProjectScanConfiguration = ProjectScanConfiguration()
+    ) -> [StringLocation] {
+        allStrings = []
         print("Scanning project at: \(path)", to: &stderr)
         
-        guard let enumerator = fileManager.enumerator(
-            at: URL(fileURLWithPath: path),
-            includingPropertiesForKeys: [.isRegularFileKey],
-            options: [.skipsHiddenFiles, .skipsPackageDescendants]
-        ) else {
+        guard let files = SourceFileFilter.collectFiles(at: path, fileManager: fileManager) else {
             print("Error: Cannot enumerate directory contents", to: &stderr)
-            return
+            return []
         }
         
-        let files = enumerator.compactMap { $0 as? URL }
-            .filter { isValidFile($0) }
+        let totalFiles = files.count
+        if totalFiles == 0 {
+            configuration.onNoScannableFiles?()
+            return []
+        }
         
-        DispatchQueue.concurrentPerform(iterations: files.count) { index in
+        var processedFiles = 0
+        
+        DispatchQueue.concurrentPerform(iterations: totalFiles) { index in
             let file = files[index]
             do {
-                try scanFile(at: file)
+                try self.scanFile(at: file)
             } catch {
-                print("Error scanning \(file.path): \(error)", to: &stderr)
+                let message = "Error scanning \(file.path): \(error)"
+                print(message, to: &stderr)
+                configuration.onFileError?(message)
             }
+            
+            self.progressLock.lock()
+            processedFiles += 1
+            let fraction = Double(processedFiles) / Double(totalFiles)
+            self.progressLock.unlock()
+            configuration.onProgress?(fraction)
         }
         
-        outputResults()
+        if configuration.emitJSONToStandardOutput {
+            outputResults()
+        }
+        
+        return getScanResults()
     }
     
     public func getScanResults() -> [StringLocation] {
@@ -92,23 +111,9 @@ public class ProjectScanner {
         }
     }
     
-    private func isValidFile(_ url: URL) -> Bool {
-        let validExtensions = ["swift", "m", "h"]
-        guard validExtensions.contains(url.pathExtension) else { return false }
-        
-        let excludedPaths = [
-            "/Pods/", "/Carthage/", "/.swiftpm/",
-            "/Tests/", "/Test/", "/Specs/",
-            "/DerivedData/", "/build/"
-        ]
-        
-        let path = url.path
-        return !excludedPaths.contains { path.contains($0) }
-    }
-    
     private func scanFile(at url: URL) throws {
-        let source = try String(contentsOf: url)
-        let sourceFile = try Parser.parse(source: source)
+        let source = try String(contentsOf: url, encoding: .utf8)
+        let sourceFile = Parser.parse(source: source)
         
         let operatorTable = OperatorTable.standardOperators
         let foldedFile = try operatorTable.foldAll(sourceFile)
@@ -196,4 +201,4 @@ public class StringVisitor: SyntaxVisitor {
         ))
         return .skipChildren
     }
-} 
+}
