@@ -1,89 +1,66 @@
 # StringScanner
 
-StringScanner 是一个用于扫描 Swift 项目中字符串的工具。它可以帮助开发者快速找出项目中的所有字符串，并识别哪些字符串已经本地化，哪些还没有。
+StringScanner 是一个用于扫描 Swift / Objective-C 项目中字符串的工具。它可以帮助开发者快速找出项目中的所有字符串，并识别哪些字符串已经本地化，哪些还没有。
 
 ## 功能特点
 
-- 扫描 Swift 项目中的所有字符串
-- 自动识别已本地化的字符串（使用 NSLocalizedString）
-- 支持 Swift、Objective-C 文件（.swift, .m, .h）
-- 多线程并发扫描，提高性能
-- 输出 JSON 格式的结果，便于后续处理
-- 自动排除测试文件、依赖库等目录
+- 扫描 Swift、Objective-C 源文件（`.swift`、`.m`、`.h`）中的字符串字面量
+- 识别常见本地化 API（`NSLocalizedString`、`String(localized:)`、`Text`、`LocalizedStringKey` 等）
+- 提供 **CLI** 与 **macOS GUI** 两种使用方式
+- 多线程并发扫描
+- 导出 JSON / CSV（GUI）
+- 自动排除测试目录、依赖目录、`Package.swift` 等
 
 ## 系统要求
 
 - macOS 13.0 或更高版本
-- Swift 5.9 或更高版本
+- Swift 5.9 或更高版本（详见 [docs/COMPATIBILITY.md](docs/COMPATIBILITY.md)）
 
 ## 安装
 
-### 使用 Swift Package Manager
-
-1. 克隆仓库：
 ```bash
-git clone https://github.com/yourusername/StringScanner.git
+git clone https://github.com/aSynch1889/StringScanner.git
 cd StringScanner
-```
-
-2. 构建项目：
-```bash
 swift build
-```
-
-3. 运行工具：
-```bash
-.build/debug/stringscanner-cli [项目路径]
 ```
 
 ## 使用方法
 
-### 基本用法
+### 命令行（CLI）
 
 ```bash
-stringscanner-cli [项目路径]
+# 扫描指定目录，结果写入当前目录 string_scan_results.json
+.build/debug/stringscanner-cli /path/to/project
+
+# 仅输出 JSON 到 stdout（便于管道）
+.build/debug/stringscanner-cli /path/to/project --stdout
+
+# 指定输出文件
+.build/debug/stringscanner-cli /path/to/project -o /tmp/strings.json
 ```
 
-如果不指定项目路径，将使用当前目录作为扫描目标。
+### 图形界面（GUI）
 
-### 输出格式
-
-工具会输出 JSON 格式的结果，包含以下信息：
-- 文件路径
-- 行号
-- 列号
-- 字符串内容
-- 是否已本地化
-
-示例输出：
-```json
-[
-  {
-    "file": "/path/to/file.swift",
-    "line": 42,
-    "column": 10,
-    "content": "Hello, World!",
-    "isLocalized": false
-  }
-]
+```bash
+swift run StringScanner
+# 或
+.build/debug/StringScanner
 ```
 
-## 排除目录
+在界面中选择项目文件夹，点击 **Start Scan**，可在结果列表中搜索并导出 JSON/CSV。
 
-工具会自动排除以下目录：
-- Pods/
-- Carthage/
-- .swiftpm/
-- Tests/
-- Test/
-- Specs/
-- DerivedData/
-- build/
+## 输出格式
+
+JSON 数组，每项包含：`file`、`line`、`column`、`content`、`isLocalized`。
+
+## 排除规则
+
+默认跳过路径组件：`Pods`、`Carthage`、`.swiftpm`、`Tests`、`Test`、`Specs`、`DerivedData`、`build`、`.git`、`.build`、`node_modules`，并跳过 `Package.swift`、`Package.resolved` 及 `*.generated.swift`。
 
 ## 许可证
 
-MIT License - 详见 [LICENSE](LICENSE) 文件
+Apache License 2.0 — 详见 [LICENSE](LICENSE)
 
 ## 贡献
 
-欢迎提交 Issue 和 Pull Request！
+欢迎提交 Issue 和 Pull Request。

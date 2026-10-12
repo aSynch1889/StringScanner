@@ -1,4 +1,5 @@
 import SwiftUI
+import StringScannerCore
 
 struct ContentView: View {
     @StateObject private var viewModel = ScannerViewModel()
@@ -7,6 +8,20 @@ struct ContentView: View {
         NavigationView {
             SidebarView(viewModel: viewModel)
             ResultsView(viewModel: viewModel)
+        }
+        .alert("Notice", isPresented: Binding(
+            get: { viewModel.errorMessage != nil },
+            set: { isPresented in
+                if !isPresented {
+                    viewModel.errorMessage = nil
+                }
+            }
+        )) {
+            Button("OK", role: .cancel) {
+                viewModel.errorMessage = nil
+            }
+        } message: {
+            Text(viewModel.errorMessage ?? "")
         }
     }
 }
@@ -70,6 +85,15 @@ struct SidebarView: View {
 
 struct ResultsView: View {
     @ObservedObject var viewModel: ScannerViewModel
+    @State private var searchText = ""
+    
+    private var filteredResults: [StringLocation] {
+        guard !searchText.isEmpty else { return viewModel.results }
+        return viewModel.results.filter { result in
+            result.content.localizedCaseInsensitiveContains(searchText)
+                || result.file.localizedCaseInsensitiveContains(searchText)
+        }
+    }
     
     var body: some View {
         VStack {
@@ -88,6 +112,9 @@ struct ResultsView: View {
             } else {
                 VStack {
                     HStack {
+                        Text("\(filteredResults.count) of \(viewModel.results.count) strings")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
                         Spacer()
                         Button(action: viewModel.exportToJSON) {
                             Label("Export JSON", systemImage: "square.and.arrow.down")
@@ -101,7 +128,7 @@ struct ResultsView: View {
                     }
                     .padding()
                     
-                    List(viewModel.results, id: \.self) { result in
+                    List(filteredResults, id: \.self) { result in
                         VStack(alignment: .leading, spacing: 4) {
                             Text(result.content)
                                 .font(.body)
@@ -124,6 +151,7 @@ struct ResultsView: View {
                         }
                         .padding(.vertical, 4)
                     }
+                    .searchable(text: $searchText, prompt: "Filter by content or file path")
                 }
             }
         }
@@ -133,4 +161,4 @@ struct ResultsView: View {
 
 #Preview {
     ContentView()
-} 
+}

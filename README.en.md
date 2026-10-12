@@ -1,89 +1,48 @@
 # StringScanner
 
-StringScanner is a tool for scanning strings in Swift projects. It helps developers quickly identify all strings in a project and determine which ones are localized and which are not.
+StringScanner scans string literals in Swift and Objective-C projects and highlights which strings appear to be localized.
 
 ## Features
 
-- Scan all strings in Swift projects
-- Automatically identify localized strings (using NSLocalizedString)
-- Support for Swift and Objective-C files (.swift, .m, .h)
-- Multi-threaded concurrent scanning for better performance
-- JSON output format for easy post-processing
-- Automatic exclusion of test files, dependency directories, etc.
+- Swift (`.swift`) and Objective-C (`.m`, `.h`) string literal scanning
+- Localization heuristics for `NSLocalizedString`, `String(localized:)`, `Text`, `LocalizedStringKey`, and more
+- **CLI** and **macOS GUI** apps
+- Concurrent scanning, JSON/CSV export (GUI)
+- Sensible default excludes (tests, dependencies, `Package.swift`, etc.)
 
-## System Requirements
+## Requirements
 
-- macOS 13.0 or later
-- Swift 5.9 or later
+- macOS 13.0+
+- Swift 5.9+ (see [docs/COMPATIBILITY.md](docs/COMPATIBILITY.md))
 
-## Installation
+## Install
 
-### Using Swift Package Manager
-
-1. Clone the repository:
 ```bash
-git clone https://github.com/yourusername/StringScanner.git
+git clone https://github.com/aSynch1889/StringScanner.git
 cd StringScanner
-```
-
-2. Build the project:
-```bash
 swift build
-```
-
-3. Run the tool:
-```bash
-.build/debug/stringscanner-cli [project-path]
 ```
 
 ## Usage
 
-### Basic Usage
+### CLI
 
 ```bash
-stringscanner-cli [project-path]
+.build/debug/stringscanner-cli /path/to/project
+.build/debug/stringscanner-cli /path/to/project --stdout
+.build/debug/stringscanner-cli /path/to/project -o /tmp/strings.json
 ```
 
-If no project path is specified, the current directory will be used as the scan target.
+By default, JSON is written to `./string_scan_results.json` in the **current working directory** (not inside the scanned tree).
 
-### Output Format
+### GUI
 
-The tool outputs results in JSON format, containing the following information:
-- File path
-- Line number
-- Column number
-- String content
-- Localization status
-
-Example output:
-```json
-[
-  {
-    "file": "/path/to/file.swift",
-    "line": 42,
-    "column": 10,
-    "content": "Hello, World!",
-    "isLocalized": false
-  }
-]
+```bash
+swift run StringScanner
 ```
 
-## Excluded Directories
-
-The tool automatically excludes the following directories:
-- Pods/
-- Carthage/
-- .swiftpm/
-- Tests/
-- Test/
-- Specs/
-- DerivedData/
-- build/
+Select a folder, scan, search results, export JSON or CSV.
 
 ## License
 
-MIT License - See [LICENSE](LICENSE) file for details
-
-## Contributing
-
-Issues and Pull Requests are welcome! 
+Apache License 2.0 — see [LICENSE](LICENSE)

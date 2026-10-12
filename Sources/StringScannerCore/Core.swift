@@ -249,14 +249,6 @@ public class StringVisitor: SyntaxVisitor {
     }
     
     public override func visit(_ node: RegexLiteralExprSyntax) -> SyntaxVisitorContinueKind {
-        let location = node.startLocation(converter: locationConverter)
-        strings.append(StringLocation(
-            file: filePath,
-            line: location.line,
-            column: location.column,
-            content: node.regex.text,
-            isLocalized: false
-        ))
-        return .skipChildren
+        .skipChildren
     }
 }

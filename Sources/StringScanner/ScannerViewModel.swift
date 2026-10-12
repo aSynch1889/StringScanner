@@ -8,6 +8,7 @@ class ScannerViewModel: ObservableObject {
     @Published var results: [StringLocation] = []
     @Published var selectedPath: String = ""
     @Published var errorMessage: String?
+    @Published private(set) var scanFailureCount = 0
     
     private let scanner = ProjectScanner()
     
@@ -34,6 +35,7 @@ class ScannerViewModel: ObservableObject {
         progress = 0
         results = []
         errorMessage = nil
+        scanFailureCount = 0
         
         let path = selectedPath
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
@@ -48,7 +50,13 @@ class ScannerViewModel: ObservableObject {
                 },
                 onFileError: { message in
                     DispatchQueue.main.async {
-                        self.errorMessage = message
+                        self.scanFailureCount += 1
+                        if self.scanFailureCount == 1 {
+                            self.errorMessage = message
+                        } else {
+                            self.errorMessage =
+                                "\(self.scanFailureCount) files failed while scanning. Latest: \(message)"
+                        }
                     }
                 },
                 onNoScannableFiles: {
