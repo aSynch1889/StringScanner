@@ -17,6 +17,7 @@ final class StringScannerCoreTests: XCTestCase {
     private func fixturesURL(named name: String) -> URL {
         URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent()
+            .deletingLastPathComponent()
             .appendingPathComponent("Fixtures/\(name)")
     }
 
@@ -56,6 +57,35 @@ final class StringScannerCoreTests: XCTestCase {
 
         XCTAssertFalse(results.contains { $0.content == "ShouldNotAppear" })
         XCTAssertTrue(results.contains { $0.content == "Hello" })
+    }
+
+    func testDetectsSwiftLocalizationAPIs() throws {
+        try copyFixture("localization_sample.swift", into: tempRoot)
+
+        let scanner = ProjectScanner()
+        let results = scanner.scanProject(
+            at: tempRoot.path,
+            configuration: ProjectScanConfiguration(emitJSONToStandardOutput: false)
+        )
+
+        XCTAssertTrue(results.contains { $0.content == "key_ns" && $0.isLocalized })
+        XCTAssertTrue(results.contains { $0.content == "key_string_localized" && $0.isLocalized })
+        XCTAssertTrue(results.contains { $0.content == "key_text" && $0.isLocalized })
+        XCTAssertTrue(results.contains { $0.content == "key_lsk" && $0.isLocalized })
+        XCTAssertTrue(results.contains { $0.content == "plain_string" && !$0.isLocalized })
+    }
+
+    func testScansObjectiveCStringLiterals() throws {
+        try copyFixture("sample.m", into: tempRoot)
+
+        let scanner = ProjectScanner()
+        let results = scanner.scanProject(
+            at: tempRoot.path,
+            configuration: ProjectScanConfiguration(emitJSONToStandardOutput: false)
+        )
+
+        XCTAssertTrue(results.contains { $0.content == "objc_plain" && !$0.isLocalized })
+        XCTAssertTrue(results.contains { $0.content == "objc_localized" && $0.isLocalized })
     }
 
     func testResultsAreSortedByFileThenLine() throws {

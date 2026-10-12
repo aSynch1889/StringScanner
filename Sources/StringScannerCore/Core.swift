@@ -113,26 +113,40 @@ public class ProjectScanner {
     
     private func scanFile(at url: URL) throws {
         let source = try String(contentsOf: url, encoding: .utf8)
+        let found: [StringLocation]
+
+        switch url.pathExtension.lowercased() {
+        case "swift":
+            found = try scanSwiftSource(source, filePath: url.path)
+        case "m", "h":
+            found = ObjCSourceScanner.scan(source: source, filePath: url.path)
+        default:
+            found = []
+        }
+
+        resultsLock.lock()
+        allStrings.append(contentsOf: found)
+        resultsLock.unlock()
+    }
+
+    private func scanSwiftSource(_ source: String, filePath: String) throws -> [StringLocation] {
         let sourceFile = Parser.parse(source: source)
-        
+
         let operatorTable = OperatorTable.standardOperators
         let foldedFile = try operatorTable.foldAll(sourceFile)
-        
+
         let locationConverter = SourceLocationConverter(
-            fileName: url.path,
+            fileName: filePath,
             tree: foldedFile
         )
-        
+
         let visitor = StringVisitor(
-            filePath: url.path,
+            filePath: filePath,
             locationConverter: locationConverter
         )
-        
+
         visitor.walk(foldedFile)
-        
-        resultsLock.lock()
-        allStrings.append(contentsOf: visitor.strings)
-        resultsLock.unlock()
+        return visitor.strings
     }
     
     private func outputResults() {
@@ -182,12 +196,56 @@ public class StringVisitor: SyntaxVisitor {
     }
     
     private func isInLocalizationContext(_ node: StringLiteralExprSyntax) -> Bool {
-        if let functionCall = node.parent?.as(FunctionCallExprSyntax.self),
-           let calledExpression = functionCall.calledExpression.as(DeclReferenceExprSyntax.self),
-           calledExpression.baseName.text == "NSLocalizedString" {
-            return true
+        var current: Syntax? = Syntax(node).parent
+        while let syntax = current {
+            if let functionCall = syntax.as(FunctionCallExprSyntax.self),
+               matchesLocalizationCall(functionCall, stringNode: node) {
+                return true
+            }
+            current = syntax.parent
         }
         return false
+    }
+
+    private func matchesLocalizationCall(
+        _ functionCall: FunctionCallExprSyntax,
+        stringNode: StringLiteralExprSyntax
+    ) -> Bool {
+        if isStringLiteral(stringNode, in: functionCall, callName: "NSLocalizedString") {
+            return true
+        }
+        if isStringLiteral(stringNode, in: functionCall, callName: "Text") {
+            return true
+        }
+        if isStringLiteral(stringNode, in: functionCall, callName: "LocalizedStringKey") {
+            return true
+        }
+
+        if let ref = functionCall.calledExpression.as(DeclReferenceExprSyntax.self),
+           ref.baseName.text == "String" {
+            for argument in functionCall.arguments where argument.label?.text == "localized" {
+                if argument.expression.as(StringLiteralExprSyntax.self)?.position == stringNode.position {
+                    return true
+                }
+            }
+        }
+
+        return false
+    }
+
+    private func isStringLiteral(
+        _ node: StringLiteralExprSyntax,
+        in functionCall: FunctionCallExprSyntax,
+        callName: String
+    ) -> Bool {
+        guard let ref = functionCall.calledExpression.as(DeclReferenceExprSyntax.self),
+              ref.baseName.text == callName else {
+            return false
+        }
+
+        return functionCall.arguments.contains { argument in
+            argument.expression.as(StringLiteralExprSyntax.self)?.position == node.position
+        }
     }
     
     public override func visit(_ node: RegexLiteralExprSyntax) -> SyntaxVisitorContinueKind {
