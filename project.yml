@@ -1,0 +1,65 @@
+name: StringScannerApp
+options:
+  bundleIdPrefix: com.asynch
+  deploymentTarget:
+    macOS: "13.0"
+  createIntermediateGroups: true
+  groupSortPosition: top
+
+packages:
+  StringScannerPackage:
+    path: .
+
+settings:
+  base:
+    SWIFT_VERSION: "5.9"
+    MACOSX_DEPLOYMENT_TARGET: "13.0"
+    MARKETING_VERSION: "1.1.0"
+    CURRENT_PROJECT_VERSION: "1"
+    # Set your Team ID in Xcode Signing & Capabilities, or:
+    #   DEVELOPMENT_TEAM: YOURTEAMID
+    CODE_SIGN_STYLE: Automatic
+    ENABLE_HARDENED_RUNTIME: YES
+
+targets:
+  StringScanner:
+    type: application
+    platform: macOS
+    sources:
+      - path: Sources/StringScanner
+        excludes:
+          - "**/*Tests*"
+      - path: App/Assets.xcassets
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.asynch.stringscanner
+        PRODUCT_NAME: StringScanner
+        INFOPLIST_FILE: App/Info.plist
+        CODE_SIGN_ENTITLEMENTS: App/StringScanner.entitlements
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        GENERATE_INFOPLIST_FILE: false
+        COMBINE_HIDPI_IMAGES: YES
+        LD_RUNPATH_SEARCH_PATHS:
+          - "$(inherited)"
+          - "@executable_path/../Frameworks"
+        SWIFT_ACTIVE_COMPILATION_CONDITIONS: "$(inherited)"
+      configs:
+        Debug:
+          SWIFT_ACTIVE_COMPILATION_CONDITIONS: "DEBUG"
+        Release:
+          SWIFT_ACTIVE_COMPILATION_CONDITIONS: "APP_STORE"
+    dependencies:
+      - package: StringScannerPackage
+        product: StringScannerCore
+    scheme:
+      testTargets: []
+
+schemes:
+  StringScanner:
+    build:
+      targets:
+        StringScanner: all
+    run:
+      config: Debug
+    archive:
+      config: Release

@@ -7,6 +7,7 @@ let package = Package(
         .macOS(.v13)
     ],
     products: [
+        .library(name: "StringScannerCore", targets: ["StringScannerCore"]),
         .executable(name: "stringscanner-cli", targets: ["StringScannerCLI"]),
         .executable(name: "StringScanner", targets: ["StringScanner"])
     ],

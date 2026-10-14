@@ -269,7 +269,7 @@ struct SidebarView: View {
                         .font(AppTheme.monoCaption)
                         .foregroundStyle(AppTheme.secondaryText)
 
-                    if updateStatus.hasUpdate {
+                    if AppDistribution.supportsExternalUpdateCheck, updateStatus.hasUpdate {
                         Link(destination: updateStatus.releaseURL) {
                             Text(L10n.t(.updateBadge))
                                 .font(.system(size: 10, weight: .bold, design: .rounded))
@@ -594,13 +594,26 @@ struct ResultsView: View {
     }
 
     private func openInXcode(_ result: StringLocation) {
-        let process = Process()
-        process.executableURL = URL(fileURLWithPath: "/usr/bin/xed")
-        process.arguments = ["--line", "\(result.line)", result.file]
-        do {
-            try process.run()
-        } catch {
-            NSWorkspace.shared.open(URL(fileURLWithPath: result.file))
+        let fileURL = URL(fileURLWithPath: result.file)
+
+        // Sandboxed App Store builds cannot reliably spawn `/usr/bin/xed`.
+        if !AppDistribution.isAppStore {
+            let process = Process()
+            process.executableURL = URL(fileURLWithPath: "/usr/bin/xed")
+            process.arguments = ["--line", "\(result.line)", result.file]
+            do {
+                try process.run()
+                return
+            } catch {
+                // Fall through to Workspace open.
+            }
+        }
+
+        if let xcode = NSWorkspace.shared.urlForApplication(withBundleIdentifier: "com.apple.dt.Xcode") {
+            let config = NSWorkspace.OpenConfiguration()
+            NSWorkspace.shared.open([fileURL], withApplicationAt: xcode, configuration: config)
+        } else {
+            NSWorkspace.shared.open(fileURL)
         }
     }
 

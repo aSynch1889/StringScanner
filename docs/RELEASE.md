@@ -1,8 +1,10 @@
 # 发布、公证与自动更新
 
+Mac App Store（付费下载）步骤见 [APP_STORE.md](./APP_STORE.md)。
+
 ## 版本号
 
-GUI 版本定义在 `Sources/StringScanner/AppVersion.swift`（当前 `1.1.0`）。打 tag 前请同步更新该常量。
+GUI 版本定义在 `Sources/StringScanner/AppVersion.swift`（当前 `1.1.0`）。打 tag 前请同步更新该常量；上架工程的版本在 `project.yml` 的 `MARKETING_VERSION` / `CURRENT_PROJECT_VERSION`，改完后执行 `xcodegen generate`。
 
 ## GitHub Release（CI）
 

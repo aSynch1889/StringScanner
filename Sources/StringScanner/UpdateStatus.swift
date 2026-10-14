@@ -14,12 +14,16 @@ final class UpdateStatus: ObservableObject {
 
     func checkOnLaunch() async {
         guard !didCheck else { return }
+        didCheck = true
+        guard AppDistribution.supportsExternalUpdateCheck else {
+            availableRelease = nil
+            return
+        }
         switch await UpdateChecker.check() {
         case .available(let release):
             availableRelease = release
         case .upToDate, .failed:
             availableRelease = nil
         }
-        didCheck = true
     }
 }

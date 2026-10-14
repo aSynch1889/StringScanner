@@ -74,6 +74,10 @@ JSON 数组，每项包含：`file`、`line`、`column`、`content`、`isLocaliz
 
 默认跳过路径组件：`Pods`、`Carthage`、`.swiftpm`、`Tests`、`Test`、`Specs`、`DerivedData`、`build`、`.git`、`.build`、`node_modules`，并跳过 `Package.swift`、`Package.resolved` 及 `*.generated.swift`。
 
+## Mac App Store
+
+付费下载上架步骤见 [docs/APP_STORE.md](docs/APP_STORE.md)（沙盒 GUI；CLI 仍走官网直装）。
+
 ## 许可证
 
 Apache License 2.0 — 详见 [LICENSE](LICENSE)

@@ -14,17 +14,25 @@ class ScannerViewModel: ObservableObject {
     @Published private(set) var scanFailureCount = 0
 
     private let scanner = ProjectScanner()
+    private var scopedFolderURL: URL?
+
+    init() {
+        restoreBookmarkedFolder()
+    }
+
+    deinit {
+        stopScopedAccess()
+    }
 
     func selectFolder() {
         let openPanel = NSOpenPanel()
         openPanel.canChooseFiles = false
         openPanel.canChooseDirectories = true
         openPanel.allowsMultipleSelection = false
+        openPanel.treatsFilePackagesAsDirectories = true
 
-        if openPanel.runModal() == .OK {
-            if let url = openPanel.url {
-                selectedPath = url.path
-            }
+        if openPanel.runModal() == .OK, let url = openPanel.url {
+            adoptFolder(url, persistBookmark: true)
         }
     }
 
@@ -33,6 +41,9 @@ class ScannerViewModel: ObservableObject {
             errorMessage = L10n.t(.selectFolderFirst)
             return
         }
+
+        // Re-assert scope before background work (required after restore / long sessions).
+        _ = scopedFolderURL?.startAccessingSecurityScopedResource()
 
         isScanning = true
         progress = 0
@@ -190,5 +201,25 @@ class ScannerViewModel: ObservableObject {
                 errorMessage = L10n.format(.failedExportStrings, error.localizedDescription)
             }
         }
+    }
+
+    private func restoreBookmarkedFolder() {
+        guard let url = SecurityScopedBookmarkStore.restore() else { return }
+        adoptFolder(url, persistBookmark: false)
+    }
+
+    private func adoptFolder(_ url: URL, persistBookmark: Bool) {
+        stopScopedAccess()
+        scopedFolderURL = url
+        _ = url.startAccessingSecurityScopedResource()
+        selectedPath = url.path
+        if persistBookmark {
+            SecurityScopedBookmarkStore.save(url: url)
+        }
+    }
+
+    private func stopScopedAccess() {
+        scopedFolderURL?.stopAccessingSecurityScopedResource()
+        scopedFolderURL = nil
     }
 }
