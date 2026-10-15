@@ -1,0 +1,1 @@
+扫描 Swift / ObjC 工程字符串，标出本地化缺口，并导出可放入 Xcode 的 .xcstrings。

@@ -1,0 +1,28 @@
+StringScanner finds string literals in Swift and Objective-C projects and shows which ones are already localized — and which are not.
+
+Built for iOS and macOS developers who need a fast localization audit before shipping. Scan an entire codebase from a clean macOS app, filter results, and export files you can drop straight into Xcode.
+
+WHY STRINGSCANNER
+• Catch hard-coded UI copy before it ships to App Store locales
+• See localized vs plain strings at a glance
+• Export .xcstrings and .strings ready for Xcode String Catalogs
+• Also export JSON and CSV for spreadsheets or custom pipelines
+• Works offline — your source stays on your Mac
+
+WHAT IT SCANS
+• Swift and Objective-C sources (.swift, .m, .h)
+• Common localization APIs: NSLocalizedString, String(localized:), Text, LocalizedStringKey, and more
+• Custom wrappers you configure (for example L10n.t or tr)
+• Storyboard / XIB / SwiftUI Preview user-facing text
+• Interpolated and concatenated strings, clearly marked
+
+HOW YOU WORK
+1. Choose a project folder
+2. Start Scan
+3. Filter by All / Localized / Plain and search
+4. Copy a key or open the file in Xcode
+5. Export .xcstrings, .strings, JSON, or CSV
+
+Built for real engineering workflows: sandbox-friendly folder access, English and Simplified Chinese UI, light and dark appearance, and a companion CLI for scripts and CI (distributed separately on the project site).
+
+StringScanner is a focused developer tool — not a translation service. It helps you find what still needs localization so your release checklist is shorter and more reliable.

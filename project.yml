@@ -1,6 +1,6 @@
 name: StringScannerApp
 options:
-  bundleIdPrefix: com.asynch
+  bundleIdPrefix: com.huazi
   deploymentTarget:
     macOS: "13.0"
   createIntermediateGroups: true
@@ -32,7 +32,7 @@ targets:
       - path: App/Assets.xcassets
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.asynch.stringscanner
+        PRODUCT_BUNDLE_IDENTIFIER: com.huazi.stringscanner
         PRODUCT_NAME: StringScanner
         INFOPLIST_FILE: App/Info.plist
         CODE_SIGN_ENTITLEMENTS: App/StringScanner.entitlements

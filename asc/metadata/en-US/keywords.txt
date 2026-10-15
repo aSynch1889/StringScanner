@@ -1,0 +1,1 @@
+localization,i18n,l10n,objc,xcode,xcstrings,nslocalizedstring,developer,swiftui,storyboard

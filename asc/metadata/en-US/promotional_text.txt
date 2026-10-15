@@ -1,0 +1,1 @@
+Scan Swift & ObjC projects for string literals, spot localization gaps, and export .xcstrings ready for Xcode.

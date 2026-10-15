@@ -1,0 +1,6 @@
+Mac App Store 首发版本。
+
+• 扫描 Swift / Objective-C 工程中的字符串字面量
+• 标出本地化缺口，并导出 .xcstrings / .strings / JSON / CSV
+• 中英界面，支持浅色与深色外观
+• 沙盒下的目录授权与 security-scoped bookmark

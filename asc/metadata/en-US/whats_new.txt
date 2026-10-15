@@ -1,0 +1,6 @@
+Initial Mac App Store release.
+
+• Scan Swift and Objective-C projects for string literals
+• Spot localization gaps and export .xcstrings / .strings / JSON / CSV
+• English and Simplified Chinese UI with light and dark appearance
+• Sandboxed folder access with security-scoped bookmarks

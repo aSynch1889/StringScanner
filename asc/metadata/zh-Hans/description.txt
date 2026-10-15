@@ -1,0 +1,28 @@
+StringScanner 可扫描 Swift 与 Objective-C 工程中的字符串字面量，并标出哪些已经本地化、哪些还没有。
+
+专为需要在发版前快速做本地化审计的 iOS / macOS 开发者设计。在简洁的 macOS 应用里扫描整个代码库，筛选结果，并导出可直接放入 Xcode 的文件。
+
+为什么选择 StringScanner
+• 在上架多语言版本前，抓住硬编码界面文案
+• 一眼区分已本地化与普通字符串
+• 导出可放入 Xcode String Catalog 的 .xcstrings / .strings
+• 同时支持 JSON、CSV，方便表格或自定义流水线
+• 离线工作，源码留在你的 Mac 上
+
+扫描范围
+• Swift / Objective-C 源文件（.swift、.m、.h）
+• 常见本地化 API：NSLocalizedString、String(localized:)、Text、LocalizedStringKey 等
+• 可配置自定义包装函数（如 L10n.t、tr）
+• Storyboard / XIB / SwiftUI Preview 中的用户可见文案
+• 插值与拼接字符串，并清晰标记
+
+使用方式
+1. 选择工程文件夹
+2. 开始扫描
+3. 按全部 / 已本地化 / 普通筛选，并搜索
+4. 复制文案或在 Xcode 中打开文件
+5. 导出 .xcstrings、.strings、JSON 或 CSV
+
+面向真实工程流程：沙盒友好的目录授权、中英界面、浅色/深色外观；另有独立分发的 CLI，便于脚本与 CI（见项目官网）。
+
+StringScanner 是聚焦的开发者工具，不是翻译服务。它帮你找出仍需本地化的内容，让发版清单更短、更可靠。
